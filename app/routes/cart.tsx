@@ -3,9 +3,10 @@ import type {Route} from './+types/cart';
 import type {CartQueryDataReturn} from '@shopify/hydrogen';
 import {CartForm} from '@shopify/hydrogen';
 import {CartMain} from '~/components/CartMain';
+import {RevealTitle} from '~/components/motion/RevealTitle';
 
 export const meta: Route.MetaFunction = () => {
-  return [{title: `Hydrogen | Cart`}];
+  return [{title: 'Panier — 333bei'}];
 };
 
 export const headers: HeadersFunction = ({actionHeaders}) => actionHeaders;
@@ -106,7 +107,9 @@ export default function Cart() {
 
   return (
     <div className="cart">
-      <h1>Cart</h1>
+      <RevealTitle className="my-10 text-[clamp(2.25rem,6vw,4.5rem)] leading-none font-extrabold tracking-tight uppercase md:my-14">
+        Panier
+      </RevealTitle>
       <CartMain layout="page" cart={cart} />
     </div>
   );

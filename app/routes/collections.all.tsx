@@ -1,12 +1,17 @@
 import type {Route} from './+types/collections.all';
 import {useLoaderData} from 'react-router';
-import {getPaginationVariables, Image, Money} from '@shopify/hydrogen';
+import {getPaginationVariables} from '@shopify/hydrogen';
 import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
 import {ProductItem} from '~/components/ProductItem';
+import {CatalogEmpty, CatalogHeader} from '~/components/catalog/CatalogHeader';
+import {getSort, productSort} from '~/components/catalog/sort';
 import type {CollectionItemFragment} from 'storefrontapi.generated';
 
 export const meta: Route.MetaFunction = () => {
-  return [{title: `Hydrogen | Products`}];
+  return [
+    {title: 'Catalogue — 333bei'},
+    {name: 'description', content: 'Tous les produits 333bei.'},
+  ];
 };
 
 export async function loader(args: Route.LoaderArgs) {
@@ -26,16 +31,16 @@ export async function loader(args: Route.LoaderArgs) {
 async function loadCriticalData({context, request}: Route.LoaderArgs) {
   const {storefront} = context;
   const paginationVariables = getPaginationVariables(request, {
-    pageBy: 8,
+    pageBy: 12,
   });
+  const sort = getSort(request);
 
   const [{products}] = await Promise.all([
     storefront.query(CATALOG_QUERY, {
-      variables: {...paginationVariables},
+      variables: {...paginationVariables, ...productSort(sort)},
     }),
-    // Add other queries here, so that they are loaded in parallel
   ]);
-  return {products};
+  return {products, sort};
 }
 
 /**
@@ -48,14 +53,23 @@ function loadDeferredData({context}: Route.LoaderArgs) {
 }
 
 export default function Collection() {
-  const {products} = useLoaderData<typeof loader>();
+  const {products, sort} = useLoaderData<typeof loader>();
+  const complete =
+    !products.pageInfo.hasNextPage && !products.pageInfo.hasPreviousPage;
 
   return (
     <div className="collection">
-      <h1>Products</h1>
+      <CatalogHeader
+        title="Catalogue"
+        count={complete ? products.nodes.length : null}
+        sort={sort}
+      />
+      {products.nodes.length === 0 && <CatalogEmpty />}
       <PaginatedResourceSection<CollectionItemFragment>
         connection={products}
         resourcesClassName="products-grid"
+        nextLabel="Afficher plus de produits"
+        previousLabel="Afficher les produits précédents"
       >
         {({node: product, index}) => (
           <ProductItem
@@ -85,6 +99,31 @@ const COLLECTION_ITEM_FRAGMENT = `#graphql
       width
       height
     }
+    availableForSale
+    variants(first: 25) {
+      nodes {
+        availableForSale
+        selectedOptions {
+          name
+          value
+        }
+      }
+    }
+    compareAtPriceRange {
+      minVariantPrice {
+        amount
+        currencyCode
+      }
+    }
+    images(first: 2) {
+      nodes {
+        id
+        altText
+        url
+        width
+        height
+      }
+    }
     priceRange {
       minVariantPrice {
         ...MoneyCollectionItem
@@ -105,8 +144,17 @@ const CATALOG_QUERY = `#graphql
     $last: Int
     $startCursor: String
     $endCursor: String
+    $sortKey: ProductSortKeys
+    $reverse: Boolean
   ) @inContext(country: $country, language: $language) {
-    products(first: $first, last: $last, before: $startCursor, after: $endCursor) {
+    products(
+      first: $first
+      last: $last
+      before: $startCursor
+      after: $endCursor
+      sortKey: $sortKey
+      reverse: $reverse
+    ) {
       nodes {
         ...CollectionItem
       }

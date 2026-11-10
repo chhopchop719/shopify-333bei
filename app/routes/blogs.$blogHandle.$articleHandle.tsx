@@ -2,6 +2,7 @@ import {useLoaderData} from 'react-router';
 import type {Route} from './+types/blogs.$blogHandle.$articleHandle';
 import {Image} from '@shopify/hydrogen';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
+import {RevealTitle} from '~/components/motion/RevealTitle';
 
 export const meta: Route.MetaFunction = ({data}) => {
   return [{title: `Hydrogen | ${data?.article.title ?? ''} article`}];
@@ -69,7 +70,7 @@ export default function Article() {
   const {article} = useLoaderData<typeof loader>();
   const {title, image, contentHtml, author} = article;
 
-  const publishedDate = new Intl.DateTimeFormat('en-US', {
+  const publishedDate = new Intl.DateTimeFormat('fr-FR', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -77,13 +78,13 @@ export default function Article() {
 
   return (
     <div className="article">
-      <h1>
+      <RevealTitle className="mt-8 mb-10 text-4xl leading-none tracking-tight normal-case md:mt-12 md:mb-14 md:text-6xl mb-4 md:mb-5">
         {title}
-        <div>
-          <time dateTime={article.publishedAt}>{publishedDate}</time> &middot;{' '}
-          <address>{author?.name}</address>
-        </div>
-      </h1>
+      </RevealTitle>
+      <p className="mb-10 text-sm font-normal text-ink/60 md:mb-14">
+        <time dateTime={article.publishedAt}>{publishedDate}</time>
+        {author?.name ? <>, par {author.name}</> : null}
+      </p>
 
       {image && <Image data={image} sizes="90vw" loading="eager" />}
       <div

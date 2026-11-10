@@ -3,6 +3,14 @@ import type {CartLayout} from '~/components/CartMain';
 import {CartForm, Money, type OptimisticCart} from '@shopify/hydrogen';
 import {useEffect, useId, useRef, useState} from 'react';
 import {useFetcher} from 'react-router';
+import {LiquidLink} from '~/components/product/LiquidButton';
+
+const fieldClass =
+  'h-10 min-w-0 flex-1 border border-ink/20 bg-transparent px-3 text-xs font-medium placeholder:text-muted-foreground focus-visible:border-ink';
+const smallButton =
+  'h-10 shrink-0 border border-ink px-4 text-xs font-semibold transition-colors duration-150 disabled:opacity-40 [@media(hover:hover)_and_(pointer:fine)]:enabled:hover:bg-ink [@media(hover:hover)_and_(pointer:fine)]:enabled:hover:text-paper';
+const linkButton =
+  'text-xs text-muted-foreground underline underline-offset-4 [@media(hover:hover)_and_(pointer:fine)]:hover:text-ink';
 
 type CartSummaryProps = {
   cart: OptimisticCart<CartApiQueryFragment | null>;
@@ -11,7 +19,9 @@ type CartSummaryProps = {
 
 export function CartSummary({cart, layout}: CartSummaryProps) {
   const className =
-    layout === 'page' ? 'cart-summary-page' : 'cart-summary-aside';
+    layout === 'page'
+      ? 'flex flex-col gap-5 border-t pt-5 md:sticky md:top-[calc(4rem+1.25rem)] md:border-t-0 md:bg-concrete md:p-6'
+      : 'sticky bottom-0 -mx-5 mt-4 flex flex-col gap-4 border-t bg-paper px-5 pt-4 pb-5';
   const summaryId = useId();
   const discountsHeadingId = useId();
   const discountCodeInputId = useId();
@@ -20,10 +30,12 @@ export function CartSummary({cart, layout}: CartSummaryProps) {
 
   return (
     <div aria-labelledby={summaryId} className={className}>
-      <h4 id={summaryId}>Totals</h4>
-      <dl role="group" className="cart-subtotal">
-        <dt>Subtotal</dt>
-        <dd>
+      <h2 id={summaryId} className="sr-only">
+        Récapitulatif
+      </h2>
+      <dl role="group" className="flex items-baseline justify-between">
+        <dt className="text-xs font-semibold uppercase">Sous-total</dt>
+        <dd className="text-sm font-bold tabular-nums">
           {cart?.cost?.subtotalAmount?.amount ? (
             <Money data={cart?.cost?.subtotalAmount} />
           ) : (
@@ -31,6 +43,9 @@ export function CartSummary({cart, layout}: CartSummaryProps) {
           )}
         </dd>
       </dl>
+      <p className="-mt-2 text-xs text-muted-foreground">
+        Livraison et taxes calculées à la commande.
+      </p>
       <CartDiscounts
         discountCodes={cart?.discountCodes}
         discountsHeadingId={discountsHeadingId}
@@ -50,12 +65,9 @@ function CartCheckoutActions({checkoutUrl}: {checkoutUrl?: string}) {
   if (!checkoutUrl) return null;
 
   return (
-    <div>
-      <a href={checkoutUrl} target="_self">
-        <p>Continue to Checkout &rarr;</p>
-      </a>
-      <br />
-    </div>
+    <LiquidLink href={checkoutUrl} target="_self">
+      Passer commande
+    </LiquidLink>
   );
 }
 
@@ -74,21 +86,25 @@ function CartDiscounts({
       ?.map(({code}) => code) || [];
 
   return (
-    <section aria-label="Discounts">
+    <details className="group text-xs [&_summary::-webkit-details-marker]:hidden">
+      <summary className="cursor-pointer list-none font-semibold underline-offset-4 [@media(hover:hover)_and_(pointer:fine)]:hover:underline">
+        Code promo
+        <span aria-hidden className="ml-1 inline-block transition-transform duration-200 group-open:rotate-45">+</span>
+      </summary>
+      <div className="mt-3 flex flex-col gap-2">
       {/* Have existing discount, display it with a remove option */}
       <dl hidden={!codes.length}>
         <div>
-          <dt id={discountsHeadingId}>Discounts</dt>
+          <dt id={discountsHeadingId} className="sr-only">Codes promo appliqués</dt>
           <UpdateDiscountForm>
             <div
-              className="cart-discount"
+              className="flex items-center justify-between gap-3"
               role="group"
               aria-labelledby={discountsHeadingId}
             >
-              <code>{codes?.join(', ')}</code>
-              &nbsp;
-              <button type="submit" aria-label="Remove discount">
-                Remove
+              <code className="font-semibold uppercase">{codes?.join(', ')}</code>
+              <button type="submit" className={linkButton} aria-label="Retirer le code promo">
+                Retirer
               </button>
             </div>
           </UpdateDiscountForm>
@@ -97,23 +113,24 @@ function CartDiscounts({
 
       {/* Show an input to apply a discount */}
       <UpdateDiscountForm discountCodes={codes}>
-        <div>
+        <div className="flex gap-2">
           <label htmlFor={discountCodeInputId} className="sr-only">
-            Discount code
+            Code promo
           </label>
           <input
             id={discountCodeInputId}
             type="text"
             name="discountCode"
-            placeholder="Discount code"
+            placeholder="Code promo"
+            className={fieldClass}
           />
-          &nbsp;
-          <button type="submit" aria-label="Apply discount code">
-            Apply
+          <button type="submit" className={smallButton} aria-label="Appliquer le code promo">
+            Appliquer
           </button>
         </div>
       </UpdateDiscountForm>
-    </section>
+      </div>
+    </details>
   );
 }
 
@@ -193,12 +210,17 @@ function CartGiftCard({
   };
 
   return (
-    <section aria-label="Gift cards">
+    <details className="group text-xs [&_summary::-webkit-details-marker]:hidden">
+      <summary className="cursor-pointer list-none font-semibold underline-offset-4 [@media(hover:hover)_and_(pointer:fine)]:hover:underline">
+        Carte cadeau
+        <span aria-hidden className="ml-1 inline-block transition-transform duration-200 group-open:rotate-45">+</span>
+      </summary>
+      <div className="mt-3 flex flex-col gap-2">
       {giftCardCodes && giftCardCodes.length > 0 && (
         <dl>
-          <dt id={giftCardHeadingId}>Applied Gift Card(s)</dt>
+          <dt id={giftCardHeadingId} className="sr-only">Cartes cadeaux appliquées</dt>
           {giftCardCodes.map((giftCard) => (
-            <dd key={giftCard.id} className="cart-discount">
+            <dd key={giftCard.id} className="flex items-center gap-2">
               <RemoveGiftCardForm
                 giftCardId={giftCard.id}
                 lastCharacters={giftCard.lastCharacters}
@@ -221,28 +243,30 @@ function CartGiftCard({
       )}
 
       <AddGiftCardForm fetcherKey="gift-card-add">
-        <div>
+        <div className="flex gap-2">
           <label htmlFor={giftCardInputId} className="sr-only">
-            Gift card code
+            Code de la carte cadeau
           </label>
           <input
             id={giftCardInputId}
             type="text"
             name="giftCardCode"
-            placeholder="Gift card code"
+            placeholder="Code de la carte cadeau"
             ref={giftCardCodeInput}
+            className={fieldClass}
           />
-          &nbsp;
           <button
             type="submit"
+            className={smallButton}
             disabled={giftCardAddFetcher.state !== 'idle'}
-            aria-label="Apply gift card code"
+            aria-label="Appliquer la carte cadeau"
           >
-            Apply
+            Appliquer
           </button>
         </div>
       </AddGiftCardForm>
-    </section>
+      </div>
+    </details>
   );
 }
 
@@ -285,16 +309,18 @@ function RemoveGiftCardForm({
         giftCardCodes: [giftCardId],
       }}
     >
-      {children}
-      &nbsp;
-      <button
-        type="submit"
-        aria-label={`Remove gift card ending in ${lastCharacters}`}
-        onClick={onRemoveClick}
-        ref={buttonRef}
-      >
-        Remove
-      </button>
+      <span className="flex items-center gap-2">
+        {children}
+        <button
+          type="submit"
+          className={linkButton}
+          aria-label={`Retirer la carte cadeau se terminant par ${lastCharacters}`}
+          onClick={onRemoveClick}
+          ref={buttonRef}
+        >
+          Retirer
+        </button>
+      </span>
     </CartForm>
   );
 }

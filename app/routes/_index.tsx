@@ -3,175 +3,276 @@ import type {Route} from './+types/_index';
 import {Suspense} from 'react';
 import {Image} from '@shopify/hydrogen';
 import type {
-  FeaturedCollectionFragment,
-  RecommendedProductsQuery,
+  HomeCollectionFragment,
+  HomeCollectionsQuery,
+  RecommendedProductFragment,
 } from 'storefrontapi.generated';
 import {ProductItem} from '~/components/ProductItem';
-import {MockShopNotice} from '~/components/MockShopNotice';
+import {ProductRail} from '~/components/ProductRail';
+import {RECOMMENDED_PRODUCT_FRAGMENT} from '~/lib/fragments';
+import {Hero, type HeroContent} from '~/components/hero/Hero';
 
 export const meta: Route.MetaFunction = () => {
-  return [{title: 'Hydrogen | Home'}];
+  return [{title: '333bei'}];
 };
 
 export async function loader(args: Route.LoaderArgs) {
-  // Start fetching non-critical data without blocking time to first byte
   const deferredData = loadDeferredData(args);
-
-  // Await the critical data required to render initial state of the page
   const criticalData = await loadCriticalData(args);
-
   return {...deferredData, ...criticalData};
 }
 
 /**
- * Load data necessary for rendering content above the fold. This is the critical data
- * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
+ * Above the fold: the hero, as the client set it in Shopify (metaobject
+ * `home_hero`, entry "accueil": photo, portrait photo, featured collection or
+ * product, label). Each empty field falls back: bundled photo, latest product
+ * created (not the latest edited: editing an old product mustn't make it new),
+ * "Nouveau".
  */
 async function loadCriticalData({context}: Route.LoaderArgs) {
-  const [{collections}] = await Promise.all([
-    context.storefront.query(FEATURED_COLLECTION_QUERY),
-    // Add other queries here, so that they are loaded in parallel
-  ]);
+  const {entry, latest} = await context.storefront.query(HERO_QUERY);
+
+  const collection =
+    entry?.collection?.reference?.__typename === 'Collection'
+      ? entry.collection.reference
+      : null;
+  const product =
+    entry?.product?.reference?.__typename === 'Product'
+      ? entry.product.reference
+      : latest.nodes[0];
+  const image =
+    entry?.image?.reference?.__typename === 'MediaImage'
+      ? entry.image.reference.image
+      : null;
+  const imageMobile =
+    entry?.imageMobile?.reference?.__typename === 'MediaImage'
+      ? entry.imageMobile.reference.image
+      : null;
+
+  let feature: HeroContent['feature'] = null;
+  if (collection) {
+    feature = {
+      title: collection.title,
+      href: `/collections/${collection.handle}`,
+    };
+  } else if (product) {
+    feature = {title: product.title, href: `/products/${product.handle}`};
+  }
+
+  const hero: HeroContent = {
+    label: entry?.label?.value?.trim() || 'Nouveau',
+    feature,
+    image: image ?? imageMobile ?? null,
+    imageMobile: image ? (imageMobile ?? null) : null,
+  };
 
   return {
     isShopLinked: Boolean(context.env.PUBLIC_STORE_DOMAIN),
-    featuredCollection: collections.nodes[0],
+    hero,
   };
 }
 
-/**
- * Load data for rendering content below the fold. This data is deferred and will be
- * fetched after the initial page load. If it's unavailable, the page should still 200.
- * Make sure to not throw any errors here, as it will cause the page to 500.
- */
+/** Below the fold: collection banners + product rails, streamed. */
 function loadDeferredData({context}: Route.LoaderArgs) {
-  const recommendedProducts = context.storefront
-    .query(RECOMMENDED_PRODUCTS_QUERY)
+  const collections = context.storefront
+    .query(HOME_COLLECTIONS_QUERY)
     .catch((error: Error) => {
-      // Log query errors, but don't throw them so the page can still render
       console.error(error);
       return null;
     });
-
-  return {
-    recommendedProducts,
-  };
+  return {collections};
 }
 
 export default function Homepage() {
-  const data = useLoaderData<typeof loader>();
+  const {hero, collections, isShopLinked} = useLoaderData<typeof loader>();
   return (
-    <div className="home">
-      {data.isShopLinked ? null : <MockShopNotice />}
-      <FeaturedCollection collection={data.featuredCollection} />
-      <RecommendedProducts products={data.recommendedProducts} />
+    <>
+      <Hero hero={hero} />
+      {!isShopLinked && (
+        <p className="site-gutter pt-4 text-center text-2xs text-muted-foreground">
+          Produits de démonstration : aucune boutique n’est encore connectée (
+          <code>npx shopify hydrogen link</code>).
+        </p>
+      )}
+      <Suspense fallback={<RailSkeleton />}>
+        <Await resolve={collections}>
+          {(response) => <Stories response={response} />}
+        </Await>
+      </Suspense>
+    </>
+  );
+}
+
+function Stories({response}: {response: HomeCollectionsQuery | null}) {
+  const stories =
+    response?.collections.nodes.filter(
+      (collection) => collection.products.nodes.length > 0,
+    ) ?? [];
+  if (stories.length) {
+    return stories.map((collection, index) => (
+      <CollectionStory
+        key={collection.id}
+        collection={collection}
+        // The first collection is already the hero image
+        showBanner={index > 0}
+      />
+    ));
+  }
+  // No collection published yet: one rail with the latest products
+  const products = response?.products.nodes ?? [];
+  return products.length ? (
+    <ProductRail
+      className="site-gutter"
+      id="nouveautes"
+      title="Nouveautés"
+      href="/collections/all"
+      products={products}
+    />
+  ) : null;
+}
+
+function CollectionStory({
+  collection,
+  showBanner,
+}: {
+  collection: HomeCollectionFragment;
+  showBanner: boolean;
+}) {
+  const products = collection.products.nodes;
+  if (!products.length) return null;
+  const href = `/collections/${collection.handle}`;
+
+  return (
+    <>
+      {showBanner && collection.image && (
+        <Link
+          to={href}
+          prefetch="intent"
+          className="mt-16 block aspect-[4/5] w-full overflow-hidden bg-concrete md:mt-24 md:aspect-[16/7]"
+          aria-label={`Collection ${collection.title}`}
+        >
+          <Image
+            data={collection.image}
+            sizes="100vw"
+            alt={collection.image.altText || collection.title}
+            className="size-full object-cover"
+          />
+        </Link>
+      )}
+      <ProductRail
+        className="site-gutter"
+        id={`rail-${collection.handle}`}
+        title={collection.title}
+        href={href}
+        products={products}
+      />
+    </>
+  );
+}
+
+function RailSkeleton() {
+  return (
+    <div className="site-gutter mt-16 md:mt-24" aria-hidden>
+      <div className="mb-7 h-8 w-48 bg-concrete" />
+      <div className="rail">
+        {Array.from({length: 5}, (_, i) => (
+          <div key={i} className="aspect-[5/7] animate-pulse bg-concrete" />
+        ))}
+      </div>
     </div>
   );
 }
 
-function FeaturedCollection({
-  collection,
-}: {
-  collection: FeaturedCollectionFragment;
-}) {
-  if (!collection) return null;
-  const image = collection?.image;
-  return (
-    <Link
-      className="featured-collection"
-      to={`/collections/${collection.handle}`}
-    >
-      {image && (
-        <div className="featured-collection-image">
-          <Image
-            data={image}
-            sizes="100vw"
-            alt={image.altText || collection.title}
-          />
-        </div>
-      )}
-      <h1>{collection.title}</h1>
-    </Link>
-  );
-}
-
-function RecommendedProducts({
-  products,
-}: {
-  products: Promise<RecommendedProductsQuery | null>;
-}) {
-  return (
-    <section
-      className="recommended-products"
-      aria-labelledby="recommended-products"
-    >
-      <h2 id="recommended-products">Recommended Products</h2>
-      <Suspense fallback={<div>Loading...</div>}>
-        <Await resolve={products}>
-          {(response) => (
-            <div className="recommended-products-grid">
-              {response
-                ? response.products.nodes.map((product) => (
-                    <ProductItem key={product.id} product={product} />
-                  ))
-                : null}
-            </div>
-          )}
-        </Await>
-      </Suspense>
-      <br />
-    </section>
-  );
-}
-
-const FEATURED_COLLECTION_QUERY = `#graphql
-  fragment FeaturedCollection on Collection {
+const COLLECTION_IMAGE_FRAGMENT = `#graphql
+  fragment HomeCollectionImage on Image {
     id
-    title
-    image {
-      id
-      url
-      altText
-      width
-      height
-    }
-    handle
+    url
+    altText
+    width
+    height
   }
-  query FeaturedCollection($country: CountryCode, $language: LanguageCode)
+` as const;
+
+const HERO_QUERY = `#graphql
+  fragment HomeHeroImage on MediaImage {
+    image {
+      url
+      width
+    }
+  }
+  query HomeHero($country: CountryCode, $language: LanguageCode)
     @inContext(country: $country, language: $language) {
-    collections(first: 1, sortKey: UPDATED_AT, reverse: true) {
+    entry: metaobject(handle: {type: "home_hero", handle: "accueil"}) {
+      label: field(key: "label") {
+        value
+      }
+      image: field(key: "image") {
+        reference {
+          __typename
+          ...HomeHeroImage
+        }
+      }
+      imageMobile: field(key: "image_mobile") {
+        reference {
+          __typename
+          ...HomeHeroImage
+        }
+      }
+      product: field(key: "product") {
+        reference {
+          __typename
+          ... on Product {
+            title
+            handle
+          }
+        }
+      }
+      collection: field(key: "collection") {
+        reference {
+          __typename
+          ... on Collection {
+            title
+            handle
+          }
+        }
+      }
+    }
+    latest: products(first: 1, sortKey: CREATED_AT, reverse: true) {
       nodes {
-        ...FeaturedCollection
+        title
+        handle
       }
     }
   }
 ` as const;
 
-const RECOMMENDED_PRODUCTS_QUERY = `#graphql
-  fragment RecommendedProduct on Product {
+const HOME_COLLECTIONS_QUERY = `#graphql
+  fragment HomeCollection on Collection {
     id
     title
     handle
-    priceRange {
-      minVariantPrice {
-        amount
-        currencyCode
-      }
+    image {
+      ...HomeCollectionImage
     }
-    featuredImage {
-      id
-      url
-      altText
-      width
-      height
-    }
-  }
-  query RecommendedProducts ($country: CountryCode, $language: LanguageCode)
-    @inContext(country: $country, language: $language) {
-    products(first: 4, sortKey: UPDATED_AT, reverse: true) {
+    products(first: 10) {
       nodes {
         ...RecommendedProduct
       }
     }
   }
+  query HomeCollections($country: CountryCode, $language: LanguageCode)
+    @inContext(country: $country, language: $language) {
+    collections(first: 4, sortKey: UPDATED_AT, reverse: true) {
+      nodes {
+        ...HomeCollection
+      }
+    }
+    products(first: 12, sortKey: CREATED_AT, reverse: true) {
+      nodes {
+        ...RecommendedProduct
+      }
+    }
+  }
+  ${COLLECTION_IMAGE_FRAGMENT}
+  ${RECOMMENDED_PRODUCT_FRAGMENT}
 ` as const;

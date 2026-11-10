@@ -1,45 +1,34 @@
-import {useLoaderData, Link} from 'react-router';
+import {Link, redirect, useLoaderData} from 'react-router';
 import type {Route} from './+types/collections._index';
 import {getPaginationVariables, Image} from '@shopify/hydrogen';
 import type {CollectionFragment} from 'storefrontapi.generated';
 import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
+import {RevealTitle} from '~/components/motion/RevealTitle';
+
+export const meta: Route.MetaFunction = () => {
+  return [{title: 'Collections — 333bei'}];
+};
 
 export async function loader(args: Route.LoaderArgs) {
-  // Start fetching non-critical data without blocking time to first byte
-  const deferredData = loadDeferredData(args);
-
-  // Await the critical data required to render initial state of the page
-  const criticalData = await loadCriticalData(args);
-
-  return {...deferredData, ...criticalData};
+  return await loadCriticalData(args);
 }
 
-/**
- * Load data necessary for rendering content above the fold. This is the critical data
- * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
- */
 async function loadCriticalData({context, request}: Route.LoaderArgs) {
   const paginationVariables = getPaginationVariables(request, {
-    pageBy: 4,
+    pageBy: 12,
   });
 
-  const [{collections}] = await Promise.all([
-    context.storefront.query(COLLECTIONS_QUERY, {
-      variables: paginationVariables,
-    }),
-    // Add other queries here, so that they are loaded in parallel
-  ]);
+  const {collections} = await context.storefront.query(COLLECTIONS_QUERY, {
+    variables: paginationVariables,
+  });
+
+  // No collection published yet: the catalogue is the useful page
+  const firstPage = !new URL(request.url).searchParams.has('cursor');
+  if (firstPage && collections.nodes.length === 0) {
+    throw redirect('/collections/all');
+  }
 
   return {collections};
-}
-
-/**
- * Load data for rendering content below the fold. This data is deferred and will be
- * fetched after the initial page load. If it's unavailable, the page should still 200.
- * Make sure to not throw any errors here, as it will cause the page to 500.
- */
-function loadDeferredData({context}: Route.LoaderArgs) {
-  return {};
 }
 
 export default function Collections() {
@@ -47,10 +36,16 @@ export default function Collections() {
 
   return (
     <div className="collections">
-      <h1>Collections</h1>
+      <header className="mt-8 mb-8 border-b border-ink/15 pb-5 md:mt-12 md:mb-10">
+        <RevealTitle className="text-4xl leading-none tracking-tight normal-case md:text-6xl">
+          Collections
+        </RevealTitle>
+      </header>
       <PaginatedResourceSection<CollectionFragment>
         connection={collections}
-        resourcesClassName="collections-grid"
+        resourcesClassName="grid grid-cols-2 gap-x-2 gap-y-8 md:grid-cols-3 md:gap-x-3 md:gap-y-10"
+        nextLabel="Afficher plus de collections"
+        previousLabel="Afficher les collections précédentes"
       >
         {({node: collection, index}) => (
           <CollectionItem
@@ -73,21 +68,25 @@ function CollectionItem({
 }) {
   return (
     <Link
-      className="collection-item"
-      key={collection.id}
+      className="group block"
       to={`/collections/${collection.handle}`}
       prefetch="intent"
     >
-      {collection?.image && (
-        <Image
-          alt={collection.image.altText || collection.title}
-          aspectRatio="1/1"
-          data={collection.image}
-          loading={index < 3 ? 'eager' : undefined}
-          sizes="(min-width: 45em) 400px, 100vw"
-        />
-      )}
-      <h5>{collection.title}</h5>
+      <div className="aspect-[4/5] overflow-hidden bg-concrete">
+        {collection.image && (
+          <Image
+            alt={collection.image.altText || collection.title}
+            aspectRatio="4/5"
+            data={collection.image}
+            loading={index < 3 ? 'eager' : 'lazy'}
+            sizes="(min-width: 48rem) 33vw, 50vw"
+            className="size-full object-cover"
+          />
+        )}
+      </div>
+      <h2 className="mt-2.5 text-sm font-bold group-hover:text-orange">
+        {collection.title}
+      </h2>
     </Link>
   );
 }

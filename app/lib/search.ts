@@ -1,7 +1,15 @@
 import type {
   PredictiveSearchQuery,
   RegularSearchQuery,
+  SearchCatalogQuery,
 } from 'storefrontapi.generated';
+
+/** The catalogue the search panel lists and filters (/search?catalog). */
+export type SearchCatalogReturn = {
+  type: 'catalog';
+  error?: string;
+  products: SearchCatalogQuery['products']['nodes'];
+};
 
 type ResultWithItems<Type extends 'predictive' | 'regular', Items> = {
   type: Type;

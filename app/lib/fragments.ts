@@ -237,6 +237,66 @@ export const FOOTER_QUERY = `#graphql
     menu(handle: $footerMenuHandle) {
       ...Menu
     }
+    shop {
+      paymentSettings {
+        acceptedCardBrands
+        supportedDigitalWallets
+      }
+    }
+    socials: menu(handle: "r-seaux") {
+      items {
+        id
+        title
+        url
+      }
+    }
   }
   ${MENU_FRAGMENT}
+` as const;
+
+/** Product card data (ProductItem / ProductRail): two photos, sizes in stock, prices. */
+export const RECOMMENDED_PRODUCT_FRAGMENT = `#graphql
+  fragment RecommendedProduct on Product {
+    id
+    title
+    handle
+    availableForSale
+    variants(first: 25) {
+      nodes {
+        availableForSale
+        selectedOptions {
+          name
+          value
+        }
+      }
+    }
+    compareAtPriceRange {
+      minVariantPrice {
+        amount
+        currencyCode
+      }
+    }
+    images(first: 2) {
+      nodes {
+        id
+        altText
+        url
+        width
+        height
+      }
+    }
+    priceRange {
+      minVariantPrice {
+        amount
+        currencyCode
+      }
+    }
+    featuredImage {
+      id
+      url
+      altText
+      width
+      height
+    }
+  }
 ` as const;

@@ -3,6 +3,7 @@ import type {Route} from './+types/blogs._index';
 import {getPaginationVariables} from '@shopify/hydrogen';
 import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
 import type {BlogsQuery} from 'storefrontapi.generated';
+import {RevealTitle} from '~/components/motion/RevealTitle';
 
 type BlogNode = BlogsQuery['blogs']['nodes'][0];
 
@@ -55,7 +56,9 @@ export default function Blogs() {
 
   return (
     <div className="blogs">
-      <h1>Blogs</h1>
+      <RevealTitle className="mt-8 mb-10 text-4xl leading-none tracking-tight normal-case md:mt-12 md:mb-14 md:text-6xl">
+        Journal
+      </RevealTitle>
       <div className="blogs-grid">
         <PaginatedResourceSection<BlogNode> connection={blogs}>
           {({node: blog}) => (

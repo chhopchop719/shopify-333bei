@@ -4,10 +4,15 @@ import {getPaginationVariables, Analytics} from '@shopify/hydrogen';
 import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
 import {ProductItem} from '~/components/ProductItem';
+import {CatalogEmpty, CatalogHeader} from '~/components/catalog/CatalogHeader';
+import {collectionSort, getSort} from '~/components/catalog/sort';
 import type {ProductItemFragment} from 'storefrontapi.generated';
 
 export const meta: Route.MetaFunction = ({data}) => {
-  return [{title: `Hydrogen | ${data?.collection.title ?? ''} Collection`}];
+  return [
+    {title: `${data?.collection.title ?? 'Collection'} — 333bei`},
+    {name: 'description', content: data?.collection.description ?? ''},
+  ];
 };
 
 export async function loader(args: Route.LoaderArgs) {
@@ -28,8 +33,9 @@ async function loadCriticalData({context, params, request}: Route.LoaderArgs) {
   const {handle} = params;
   const {storefront} = context;
   const paginationVariables = getPaginationVariables(request, {
-    pageBy: 8,
+    pageBy: 12,
   });
+  const sort = getSort(request);
 
   if (!handle) {
     throw redirect('/collections');
@@ -37,7 +43,7 @@ async function loadCriticalData({context, params, request}: Route.LoaderArgs) {
 
   const [{collection}] = await Promise.all([
     storefront.query(COLLECTION_QUERY, {
-      variables: {handle, ...paginationVariables},
+      variables: {handle, ...paginationVariables, ...collectionSort(sort)},
       // Add other queries here, so that they are loaded in parallel
     }),
   ]);
@@ -53,6 +59,7 @@ async function loadCriticalData({context, params, request}: Route.LoaderArgs) {
 
   return {
     collection,
+    sort,
   };
 }
 
@@ -66,15 +73,24 @@ function loadDeferredData({context}: Route.LoaderArgs) {
 }
 
 export default function Collection() {
-  const {collection} = useLoaderData<typeof loader>();
+  const {collection, sort} = useLoaderData<typeof loader>();
+  const {nodes, pageInfo} = collection.products;
+  const complete = !pageInfo.hasNextPage && !pageInfo.hasPreviousPage;
 
   return (
     <div className="collection">
-      <h1>{collection.title}</h1>
-      <p className="collection-description">{collection.description}</p>
+      <CatalogHeader
+        title={collection.title}
+        description={collection.description}
+        count={complete ? nodes.length : null}
+        sort={sort}
+      />
+      {nodes.length === 0 && <CatalogEmpty />}
       <PaginatedResourceSection<ProductItemFragment>
         connection={collection.products}
         resourcesClassName="products-grid"
+        nextLabel="Afficher plus de produits"
+        previousLabel="Afficher les produits précédents"
       >
         {({node: product, index}) => (
           <ProductItem
@@ -112,6 +128,31 @@ const PRODUCT_ITEM_FRAGMENT = `#graphql
       width
       height
     }
+    availableForSale
+    variants(first: 25) {
+      nodes {
+        availableForSale
+        selectedOptions {
+          name
+          value
+        }
+      }
+    }
+    compareAtPriceRange {
+      minVariantPrice {
+        amount
+        currencyCode
+      }
+    }
+    images(first: 2) {
+      nodes {
+        id
+        altText
+        url
+        width
+        height
+      }
+    }
     priceRange {
       minVariantPrice {
         ...MoneyProductItem
@@ -134,6 +175,8 @@ const COLLECTION_QUERY = `#graphql
     $last: Int
     $startCursor: String
     $endCursor: String
+    $sortKey: ProductCollectionSortKeys
+    $reverse: Boolean
   ) @inContext(country: $country, language: $language) {
     collection(handle: $handle) {
       id
@@ -144,7 +187,9 @@ const COLLECTION_QUERY = `#graphql
         first: $first,
         last: $last,
         before: $startCursor,
-        after: $endCursor
+        after: $endCursor,
+        sortKey: $sortKey,
+        reverse: $reverse
       ) {
         nodes {
           ...ProductItem

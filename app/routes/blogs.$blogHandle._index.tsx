@@ -4,6 +4,7 @@ import {Image, getPaginationVariables} from '@shopify/hydrogen';
 import type {ArticleItemFragment} from 'storefrontapi.generated';
 import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
+import {RevealTitle} from '~/components/motion/RevealTitle';
 
 export const meta: Route.MetaFunction = ({data}) => {
   return [{title: `Hydrogen | ${data?.blog.title ?? ''} blog`}];
@@ -66,7 +67,9 @@ export default function Blog() {
 
   return (
     <div className="blog">
-      <h1>{blog.title}</h1>
+      <RevealTitle className="mt-8 mb-10 text-4xl leading-none tracking-tight normal-case md:mt-12 md:mb-14 md:text-6xl">
+        {blog.title}
+      </RevealTitle>
       <div className="blog-grid">
         <PaginatedResourceSection<ArticleItemFragment> connection={articles}>
           {({node: article, index}) => (

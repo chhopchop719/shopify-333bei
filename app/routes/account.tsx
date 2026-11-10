@@ -7,6 +7,7 @@ import {
 } from 'react-router';
 import type {Route} from './+types/account';
 import {CUSTOMER_DETAILS_QUERY} from '~/graphql/customer-account/CustomerDetailsQuery';
+import {RevealTitle} from '~/components/motion/RevealTitle';
 
 export function shouldRevalidate() {
   return true;
@@ -37,16 +38,15 @@ export async function loader({context}: Route.LoaderArgs) {
 export default function AccountLayout() {
   const {customer} = useLoaderData<typeof loader>();
 
-  const heading = customer
-    ? customer.firstName
-      ? `Welcome, ${customer.firstName}`
-      : `Welcome to your account.`
-    : 'Account Details';
+  const heading = customer?.firstName
+    ? `Bonjour ${customer.firstName}`
+    : 'Mon compte';
 
   return (
     <div className="account">
-      <h1>{heading}</h1>
-      <br />
+      <RevealTitle className="mt-8 mb-10 text-4xl leading-none tracking-tight normal-case md:mt-12 md:mb-14 md:text-6xl">
+        {heading}
+      </RevealTitle>
       <AccountMenu />
       <br />
       <br />
@@ -65,7 +65,7 @@ function AccountMenu() {
   }) {
     return {
       fontWeight: isActive ? 'bold' : undefined,
-      color: isPending ? 'grey' : 'black',
+      color: isPending ? 'var(--muted-foreground)' : 'var(--ink)',
     };
   }
 

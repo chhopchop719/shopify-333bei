@@ -4,6 +4,7 @@ import type {CartApiQueryFragment} from 'storefrontapi.generated';
 import {useAside} from '~/components/Aside';
 import {CartLineItem, type CartLine} from '~/components/CartLineItem';
 import {CartSummary} from './CartSummary';
+import {cn} from '~/lib/utils';
 
 export type CartLayout = 'page' | 'aside';
 
@@ -42,44 +43,43 @@ export function CartMain({layout, cart: originalCart}: CartMainProps) {
   const cart = useOptimisticCart(originalCart);
 
   const linesCount = Boolean(cart?.lines?.nodes?.length || 0);
-  const withDiscount =
-    cart &&
-    Boolean(cart?.discountCodes?.filter((code) => code.applicable)?.length);
-  const className = `cart-main ${withDiscount ? 'with-discount' : ''}`;
   const cartHasItems = cart?.totalQuantity ? cart.totalQuantity > 0 : false;
   const childrenMap = getLineItemChildrenMap(cart?.lines?.nodes ?? []);
 
   return (
     <section
-      className={className}
-      aria-label={layout === 'page' ? 'Cart page' : 'Cart drawer'}
+      className={cn(
+        layout === 'aside' ? 'flex min-h-full flex-col' : 'pb-10',
+      )}
+      aria-label={layout === 'page' ? 'Panier' : 'Panier (panneau)'}
     >
       <CartEmpty hidden={linesCount} layout={layout} />
-      <div className="cart-details">
+      <div
+        className={cn(
+          layout === 'aside'
+            ? 'flex flex-1 flex-col'
+            : 'grid gap-10 md:grid-cols-[minmax(0,1fr)_380px] md:items-start',
+        )}
+      >
         <p id="cart-lines" className="sr-only">
-          Line items
+          Articles du panier
         </p>
-        <div>
-          <ul aria-labelledby="cart-lines">
-            {(cart?.lines?.nodes ?? []).map((line) => {
-              // we do not render non-parent lines at the root of the cart
-              if (
-                'parentRelationship' in line &&
-                line.parentRelationship?.parent
-              ) {
-                return null;
-              }
-              return (
-                <CartLineItem
-                  key={line.id}
-                  line={line}
-                  layout={layout}
-                  childrenMap={childrenMap}
-                />
-              );
-            })}
-          </ul>
-        </div>
+        <ul aria-labelledby="cart-lines" className="flex-1 divide-y">
+          {(cart?.lines?.nodes ?? []).map((line) => {
+            // we do not render non-parent lines at the root of the cart
+            if ('parentRelationship' in line && line.parentRelationship?.parent) {
+              return null;
+            }
+            return (
+              <CartLineItem
+                key={line.id}
+                line={line}
+                layout={layout}
+                childrenMap={childrenMap}
+              />
+            );
+          })}
+        </ul>
         {cartHasItems && <CartSummary cart={cart} layout={layout} />}
       </div>
     </section>
@@ -94,15 +94,17 @@ function CartEmpty({
 }) {
   const {close} = useAside();
   return (
-    <div hidden={hidden}>
-      <br />
-      <p>
-        Looks like you haven&rsquo;t added anything yet, let&rsquo;s get you
-        started!
+    <div hidden={hidden} className="py-8">
+      <p className="text-2xl leading-tight font-extrabold uppercase">
+        Votre panier est vide.
       </p>
-      <br />
-      <Link to="/collections" onClick={close} prefetch="viewport">
-        Continue shopping →
+      <Link
+        to="/collections/all"
+        onClick={close}
+        prefetch="viewport"
+        className="mt-4 inline-block text-xs underline underline-offset-4 [@media(hover:hover)_and_(pointer:fine)]:hover:text-orange"
+      >
+        Voir les produits
       </Link>
     </div>
   );

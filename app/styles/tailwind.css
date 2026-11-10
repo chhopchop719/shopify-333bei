@@ -1,6 +1,553 @@
 /**
- * Configure Tailwind v4 in this file using CSS variables and directives:
- * https://tailwindcss.com/docs/v4-beta#css-first-configuration
+ * 333bei — design tokens (Tailwind v4 + shadcn/ui).
+ * Direction: off-white gallery storefront (never pure #000/#fff), tiny bold type, zero radius,
+ * the logo's orange + butter used only for active details; ink footer.
  */
 
 @import 'tailwindcss';
+@import 'tw-animate-css';
+/* Skeleton styles live in layers so Tailwind utilities always win over them */
+@import './reset.css' layer(base);
+@import './app.css' layer(components);
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Brand palette */
+  --paper: #fafaf7;
+  --ink: #171615;
+  --concrete: #ecebe8;
+  --orange: #eb5034;
+  --butter: #fada53;
+
+  /* shadcn semantic tokens */
+  --radius: 0rem;
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: var(--paper);
+  --card-foreground: var(--ink);
+  --popover: var(--paper);
+  --popover-foreground: var(--ink);
+  --primary: var(--ink);
+  --primary-foreground: var(--paper);
+  --secondary: var(--concrete);
+  --secondary-foreground: var(--ink);
+  --muted: var(--concrete);
+  --muted-foreground: rgb(23 22 21 / 0.6);
+  --accent: var(--concrete);
+  --accent-foreground: var(--ink);
+  --destructive: var(--orange);
+  --border: rgb(23 22 21 / 0.12);
+  --input: rgb(23 22 21 / 0.22);
+  --ring: var(--orange);
+}
+
+@theme inline {
+  --font-sans: 'Sora', ui-sans-serif, system-ui, sans-serif;
+
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-concrete: var(--concrete);
+  --color-orange: var(--orange);
+  --color-butter: var(--butter);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: var(--radius);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius);
+  --radius-xl: var(--radius);
+
+  /* Type scale: dense storefront body, one display step */
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1.35;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/60;
+  }
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    @apply bg-background text-foreground font-sans text-xs font-bold;
+  }
+  :focus-visible {
+    outline: 2px solid var(--orange);
+    outline-offset: 2px;
+  }
+  /* Tailwind v4 leaves buttons on the arrow cursor: every control that acts
+     on click shows the hand, like links; disabled ones say so. */
+  button,
+  [role='button'],
+  summary,
+  select,
+  input:is(
+    [type='checkbox'],
+    [type='radio'],
+    [type='submit'],
+    [type='button'],
+    [type='reset'],
+    [type='file']
+  ),
+  label:has(> input:is([type='checkbox'], [type='radio'])),
+  input:is([type='checkbox'], [type='radio']) + label {
+    cursor: pointer;
+  }
+  :is(button, select, input):disabled,
+  [aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+}
+
+/* ---------- Site column ----------
+   Content stops widening at --site-max and sits centred; backgrounds (header
+   bar, footer, hero photo) stay full-bleed. `site-gutter` gives any full-width
+   element the side padding that lines its content up with that column:
+   the usual 12/20px gutter, growing once the screen is wider than the column. */
+:root {
+  --site-max: 90rem;
+  --gutter: 0.75rem;
+}
+@media (min-width: 48rem) {
+  :root {
+    --gutter: 1.25rem;
+  }
+}
+@utility site-gutter {
+  padding-inline: max(var(--gutter), calc((100% - var(--site-max)) / 2));
+}
+
+/* Horizontal product rail */
+@utility rail {
+  display: grid;
+  grid-auto-flow: column;
+  /* fractional counts: the last card is cut by the edge, which says "more →" */
+  grid-auto-columns: calc((100% - 1 * 0.5rem) / 1.6);
+  gap: 0.5rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  & > * {
+    scroll-snap-align: start;
+  }
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  @media (min-width: 48rem) {
+    grid-auto-columns: calc((100% - 3 * 0.75rem) / 3.3);
+    gap: 0.75rem;
+  }
+  @media (min-width: 80rem) {
+    grid-auto-columns: calc((100% - 4 * 0.75rem) / 4.3);
+  }
+}
+
+/* ---------- Motion tokens (animate skill) ---------- */
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+/* Card: second photo fades in over the first on hover (fine pointers only) */
+.card-swap {
+  opacity: 0;
+}
+@media (hover: hover) and (pointer: fine) {
+  .card-swap {
+    transition: opacity 250ms ease;
+  }
+  .group:hover .card-swap,
+  .group:focus-visible .card-swap {
+    opacity: 1;
+  }
+}
+
+/* Size strip: only revealed on hover by fine pointers (touch users get it on the product page) */
+.card-sizes {
+  display: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .card-sizes {
+    display: flex;
+    opacity: 0;
+    transform: translateY(8px);
+    transition:
+      opacity 200ms var(--ease-out),
+      transform 300ms var(--ease-out);
+  }
+  .group:hover .card-sizes,
+  .group:focus-visible .card-sizes {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-sizes {
+    transition: none;
+  }
+}
+
+/* ---------- Site loader (see SiteLoader.tsx), once per session ---------- */
+.site-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 70; /* above everything, header and dev tools included */
+  display: grid;
+  place-items: center;
+  background: var(--ink);
+}
+html[data-loaded] .site-loader {
+  display: none;
+}
+@media (scripting: none), (prefers-reduced-motion: reduce) {
+  .site-loader {
+    display: none;
+  }
+}
+/* While it shows: no scrolling behind it (keyboard and scrollbar included),
+   and the header waits under it, then fades in as the page appears */
+html {
+  scrollbar-gutter: stable;
+}
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  html:not([data-loaded]) {
+    overflow: hidden;
+  }
+  html:not([data-loaded]) [data-site-header] {
+    opacity: 0;
+    visibility: hidden; /* not reachable by Tab before the app takes over */
+  }
+}
+.site-loader-frame {
+  position: relative;
+  width: clamp(8.25rem, 13vw, 11.25rem);
+  aspect-ratio: 5 / 7;
+  overflow: hidden;
+  background: color-mix(in oklab, var(--paper) 8%, var(--ink));
+}
+.site-loader-frame > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: cover;
+  visibility: hidden;
+}
+.site-loader-frame > img[data-on] {
+  visibility: visible;
+}
+.site-loader-hero {
+  /* starts at the frame's box, grows to the real hero's (set by SiteLoader) */
+  position: absolute;
+  overflow: hidden;
+  opacity: 0;
+}
+
+/* ---------- Page transitions (see PageCurtain.tsx and motion/transitions) ---------- */
+/* The page content wrapper keeps the footer at the bottom (body is a flex column) */
+[data-page] {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+[data-page] > main {
+  flex: 1;
+}
+.page-curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 35; /* above the page, under the header (z-40) and side panels */
+  display: none;
+  pointer-events: none;
+}
+.page-curtain[data-on] {
+  display: block;
+  pointer-events: auto; /* no double clicks while it runs */
+}
+.curtain-layer {
+  position: absolute;
+  inset: 0;
+  overflow: clip;
+}
+.curtain-layer > * {
+  position: absolute;
+}
+/* Fallback (no [data-page] to move): a paper sheet, like the zoom's fade */
+.curtain-fill {
+  inset: 0;
+  background: var(--paper);
+}
+/* Copy of a product card's photo flying to the product gallery */
+.curtain-flight {
+  position: absolute;
+  overflow: hidden;
+  background: var(--concrete);
+}
+.curtain-flight > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: cover;
+}
+
+/* ---------- Sticker logo (see StickerLogo.tsx) ---------- */
+.sticker-mark {
+  position: relative;
+  will-change: transform;
+}
+/* Home hero: hidden until it's slapped on (only when that animation will run) */
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  .hero-sticker {
+    opacity: 0;
+  }
+}
+
+/* ---------- Header (see Header.tsx) ---------- */
+:root {
+  /* The bar's height (the search panel's top row matches it) */
+  --header-h: 3.5rem;
+  /* Resting strength of the bar's words and glyphs: one step back, still
+     readable (ink .72 over the frosted bar stays above 4.5:1). Pointed,
+     focused or "here": full strength. */
+  --bar-rest: 0.72;
+  --bar-rest-icon: 0.72;
+}
+@media (min-width: 48rem) {
+  :root {
+    --header-h: 4rem;
+  }
+}
+[data-site-header] {
+  --bar-ground-fg: var(--ink);
+}
+/* Over the hero photo: paper words at full strength (dimmed paper fails
+   contrast on the veiled photo), glyphs barely back (still above 3:1) */
+[data-site-header][data-overlay] {
+  --bar-ground-fg: var(--paper);
+  --bar-rest: 1;
+  --bar-rest-icon: 0.85;
+}
+/* Focus ring in the colour that reads on the bar's ground: paper over the
+   hero, ink on the frosted bar (the orange ring disappears on the photo, and
+   the ring sits outside the butter block, on that ground) */
+[data-site-header] :focus-visible {
+  outline-color: var(--bar-ground-fg);
+}
+/* Icon glyphs (bar, search, sheets): come forward when their control is
+   pointed, focused, open or current */
+.bar-glyph {
+  opacity: var(--bar-rest-icon);
+  transition: opacity 200ms var(--ease-out);
+}
+@media (hover: hover) {
+  :hover > .bar-glyph {
+    opacity: 1;
+  }
+}
+:focus-visible > .bar-glyph,
+[aria-expanded='true'] > .bar-glyph,
+[aria-current] > .bar-glyph {
+  opacity: 1;
+}
+/* "Aller au contenu": off screen until focused, then on butter in the bar */
+.skip-link {
+  position: absolute;
+  top: 0.5rem;
+  left: max(var(--gutter), calc((100% - var(--site-max)) / 2));
+  z-index: 10;
+  padding: 0.5rem 0.75rem;
+  background: var(--butter);
+  color: var(--ink);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  transform: translateY(-200%);
+}
+.skip-link:focus-visible {
+  transform: none;
+}
+
+/* ---------- Side sheets (cart, mobile menu: Aside.tsx, ui/sheet.tsx) ---------- */
+/* Radix compensates the hidden scrollbar with a body margin, but
+   scrollbar-gutter (above) already keeps that space: no double shift */
+html body[data-scroll-locked] {
+  margin-right: 0 !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* No slide: the panel fades in and out where it stands */
+  [data-slot='sheet-content'] {
+    --tw-enter-translate-x: 0;
+    --tw-exit-translate-x: 0;
+    --tw-enter-translate-y: 0;
+    --tw-exit-translate-y: 0;
+    --tw-enter-opacity: 0;
+    --tw-exit-opacity: 0;
+  }
+}
+
+/* ---------- Search: the "Index" (see SearchIndex.tsx) ----------
+   An ink panel unrolls from the top over the whole page (and folds back up);
+   the catalogue's rows rise one after the other once it is open. */
+.search-index {
+  clip-path: inset(0 0 100% 0);
+  visibility: hidden;
+  transition:
+    clip-path 520ms var(--ease-in-out),
+    visibility 0s linear 520ms;
+}
+.search-index[data-open='true'] {
+  clip-path: inset(0 0 0 0);
+  visibility: visible;
+  transition:
+    clip-path 680ms var(--ease-in-out),
+    visibility 0s;
+}
+.search-index-list[data-phase='enter'] .search-index-row {
+  animation: search-index-rise 700ms var(--ease-out) both;
+  animation-delay: calc(260ms + var(--i, 0) * 55ms);
+}
+/* Typing: rows that come back rise again, quicker */
+.search-index-list[data-phase='type'] .search-index-row {
+  animation: search-index-rise 380ms var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 22ms);
+}
+@keyframes search-index-rise {
+  from {
+    opacity: 0;
+    transform: translateY(1.6rem);
+  }
+}
+/* The pointed (or arrowed) row: a butter arrow slides in before its name */
+.search-index-name::before {
+  content: '→';
+  display: inline-block;
+  width: 0;
+  overflow: hidden;
+  vertical-align: bottom;
+  color: var(--butter);
+  opacity: 0;
+  transition:
+    width 380ms var(--ease-out),
+    opacity 200ms var(--ease-out);
+}
+[aria-selected='true'] > a .search-index-name::before {
+  width: 1.05em;
+  opacity: 1;
+}
+/* What was typed, marked in the names */
+.search-index-name mark {
+  background: var(--butter);
+  color: var(--ink);
+}
+.search-index-photo {
+  animation: search-index-photo 450ms var(--ease-out) both;
+}
+@keyframes search-index-photo {
+  from {
+    opacity: 0;
+    transform: scale(1.06);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .search-index,
+  .search-index[data-open='true'] {
+    clip-path: none;
+    transition: none;
+  }
+  .search-index-list .search-index-row,
+  .search-index-photo {
+    animation: none;
+  }
+  .search-index-name::before {
+    transition: none;
+  }
+}
+
+/* ---------- RevealTitle (SplitText line masks) ----------
+   Each line is clipped by its mask; with tight leading the mask is only 1em
+   tall and would cut descenders (the "g" of Catalogue) and accents. The mask
+   gets room above and below, given back with negative margins so the title
+   keeps its layout. */
+.reveal-line-mask {
+  padding-block: 0.12em 0.2em;
+  margin-block: -0.12em -0.2em;
+}
+/* Hero's featured name (Hero.tsx): one mask per word, same extra room, plus a
+   little on the sides for the letters' tilt as they rise */
+.hero-word-mask {
+  padding: 0.12em 0.08em 0.2em;
+  margin: -0.12em -0.08em -0.2em;
+}
+
+/* ---------- Header navigation ---------- */
+/* Butter block under the current link glides to the hovered one */
+.nav-block {
+  transition:
+    transform 240ms var(--ease-out),
+    opacity 160ms var(--ease-out);
+}
+/* Mobile menu: words come in one after the other when the sheet opens */
+.mobile-nav-item {
+  animation: nav-in 320ms var(--ease-out) both;
+}
+@keyframes nav-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.6rem);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-block {
+    transition: none;
+  }
+  .mobile-nav-item {
+    animation: none;
+  }
+}
+
+/* ---------- Product gallery frame ---------- */
+/* Frame width keeps a portrait photo within the viewport height under the
+   header, so each photo is seen whole (aspect-ratio comes from the image). */
+.product-frame {
+  width: min(85vw, calc((100svh - 9rem) * 0.75));
+}
+@media (min-width: 48rem) {
+  /* Two photos per row; the gallery is capped so one row always fits the
+     viewport height (header 4rem + top 1.25rem + bottom 1.25rem). */
+  .product-gallery {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 0.5rem;
+    width: min(
+      60vw,
+      calc(var(--site-max) * 0.6),
+      calc((100svh - 6.5rem) * 0.75 * 2 + 0.5rem)
+    );
+  }
+  .product-frame {
+    width: 100%;
+  }
+}

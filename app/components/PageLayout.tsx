@@ -1,19 +1,24 @@
-import {Await, Link} from 'react-router';
-import {Suspense, useId} from 'react';
+import {Await, Link, useLocation} from 'react-router';
+import {Suspense, useMemo} from 'react';
 import type {
   CartApiQueryFragment,
   FooterQuery,
   HeaderQuery,
 } from 'storefrontapi.generated';
-import {Aside} from '~/components/Aside';
+import {Aside, useAside} from '~/components/Aside';
 import {Footer} from '~/components/Footer';
-import {Header, HeaderMenu} from '~/components/Header';
-import {CartMain} from '~/components/CartMain';
 import {
-  SEARCH_ENDPOINT,
-  SearchFormPredictive,
-} from '~/components/SearchFormPredictive';
-import {SearchResultsPredictive} from '~/components/SearchResultsPredictive';
+  Header,
+  headerLinks,
+  MobileNav,
+  type MenuLink,
+} from '~/components/Header';
+import {CartMain} from '~/components/CartMain';
+import {Logo} from '~/components/Logo';
+import {cn, isHomePath} from '~/lib/utils';
+import {SmoothScroll} from '~/components/motion/SmoothScroll';
+import {PageCurtain} from '~/components/motion/PageCurtain';
+import {SiteLoader} from '~/components/motion/SiteLoader';
 
 interface PageLayoutProps {
   cart: Promise<CartApiQueryFragment | null>;
@@ -32,34 +37,63 @@ export function PageLayout({
   isLoggedIn,
   publicStoreDomain,
 }: PageLayoutProps) {
+  const {pathname} = useLocation();
+  // Home is full-bleed; every other page sits in the centred site column
+  const isHome = isHomePath(pathname);
+  // One list of links for the desktop bar and the mobile sheet
+  const links = useMemo(
+    () => headerLinks(header, publicStoreDomain),
+    [header, publicStoreDomain],
+  );
   return (
     <Aside.Provider>
+      <SmoothScroll />
+      <PageCurtain />
+      <SiteLoader isHome={isHome} />
       <CartAside cart={cart} />
-      <SearchAside />
-      <MobileMenuAside header={header} publicStoreDomain={publicStoreDomain} />
-      {header && (
-        <Header
+      <MobileMenuAside
+        links={links}
+        shopName={header.shop.name}
+        isLoggedIn={isLoggedIn}
+      />
+      <Header
+        header={header}
+        links={links}
+        cart={cart}
+        isLoggedIn={isLoggedIn}
+      />
+      {/* data-page: the page content, which the page transition moves */}
+      <div data-page>
+        {/* #contenu: target of the header's skip link */}
+        <main
+          id="contenu"
+          className={cn('outline-none', !isHome && 'site-gutter pb-4')}
+        >
+          {children}
+        </main>
+        <Footer
+          footer={footer}
           header={header}
-          cart={cart}
-          isLoggedIn={isLoggedIn}
           publicStoreDomain={publicStoreDomain}
         />
-      )}
-      <main>{children}</main>
-      <Footer
-        footer={footer}
-        header={header}
-        publicStoreDomain={publicStoreDomain}
-      />
+      </div>
     </Aside.Provider>
   );
 }
 
 function CartAside({cart}: {cart: PageLayoutProps['cart']}) {
   return (
-    <Aside type="cart" heading="CART">
-      <Suspense fallback={<p>Loading cart ...</p>}>
-        <Await resolve={cart}>
+    <Aside type="cart" heading="Panier">
+      <Suspense fallback={<p className="py-4">Chargement du panier…</p>}>
+        <Await
+          resolve={cart}
+          errorElement={
+            <p className="py-4">
+              Le panier n’a pas pu être chargé. Rechargez la page pour
+              réessayer.
+            </p>
+          }
+        >
           {(cart) => {
             return <CartMain cart={cart} layout="aside" />;
           }}
@@ -69,106 +103,36 @@ function CartAside({cart}: {cart: PageLayoutProps['cart']}) {
   );
 }
 
-function SearchAside() {
-  const queriesDatalistId = useId();
-  return (
-    <Aside type="search" heading="SEARCH">
-      <div className="predictive-search">
-        <br />
-        <SearchFormPredictive>
-          {({fetchResults, goToSearch, inputRef}) => (
-            <>
-              <input
-                name="q"
-                onChange={fetchResults}
-                onFocus={fetchResults}
-                placeholder="Search"
-                ref={inputRef}
-                type="search"
-                list={queriesDatalistId}
-              />
-              &nbsp;
-              <button onClick={goToSearch}>Search</button>
-            </>
-          )}
-        </SearchFormPredictive>
-
-        <SearchResultsPredictive>
-          {({items, total, term, state, closeSearch}) => {
-            const {articles, collections, pages, products, queries} = items;
-
-            if (state === 'loading' && term.current) {
-              return <div>Loading...</div>;
-            }
-
-            if (!total) {
-              return <SearchResultsPredictive.Empty term={term} />;
-            }
-
-            return (
-              <>
-                <SearchResultsPredictive.Queries
-                  queries={queries}
-                  queriesDatalistId={queriesDatalistId}
-                />
-                <SearchResultsPredictive.Products
-                  products={products}
-                  closeSearch={closeSearch}
-                  term={term}
-                />
-                <SearchResultsPredictive.Collections
-                  collections={collections}
-                  closeSearch={closeSearch}
-                  term={term}
-                />
-                <SearchResultsPredictive.Pages
-                  pages={pages}
-                  closeSearch={closeSearch}
-                  term={term}
-                />
-                <SearchResultsPredictive.Articles
-                  articles={articles}
-                  closeSearch={closeSearch}
-                  term={term}
-                />
-                {term.current && total ? (
-                  <Link
-                    onClick={closeSearch}
-                    to={`${SEARCH_ENDPOINT}?q=${term.current}`}
-                  >
-                    <p>
-                      View all results for <q>{term.current}</q>
-                      &nbsp; →
-                    </p>
-                  </Link>
-                ) : null}
-              </>
-            );
-          }}
-        </SearchResultsPredictive>
-      </div>
-    </Aside>
-  );
-}
-
+/** Always mounted, so the burger opens a menu even without the Shopify one. */
 function MobileMenuAside({
-  header,
-  publicStoreDomain,
+  links,
+  shopName,
+  isLoggedIn,
 }: {
-  header: PageLayoutProps['header'];
-  publicStoreDomain: PageLayoutProps['publicStoreDomain'];
+  links: MenuLink[];
+  shopName: string;
+  isLoggedIn: PageLayoutProps['isLoggedIn'];
 }) {
+  const {close} = useAside();
   return (
-    header.menu &&
-    header.shop.primaryDomain?.url && (
-      <Aside type="mobile" heading="MENU">
-        <HeaderMenu
-          menu={header.menu}
-          viewport="mobile"
-          primaryDomainUrl={header.shop.primaryDomain.url}
-          publicStoreDomain={publicStoreDomain}
-        />
-      </Aside>
-    )
+    <Aside
+      type="mobile"
+      heading="Menu"
+      // Same row as the bar: the logo stays where it was, × replaces ≡
+      brand={
+        <Link
+          to="/"
+          prefetch="intent"
+          onClick={close}
+          aria-label={`${shopName} — accueil`}
+          // 44px tall touch target; the 32px mark stays centred in the row
+          className="flex h-11 items-center"
+        >
+          <Logo className="h-8 w-auto" />
+        </Link>
+      }
+    >
+      <MobileNav links={links} isLoggedIn={isLoggedIn} />
+    </Aside>
   );
 }

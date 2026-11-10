@@ -1,60 +1,68 @@
-import {Link, useLoaderData} from 'react-router';
+import {useLoaderData} from 'react-router';
 import type {Route} from './+types/policies.$handle';
-import {type Shop} from '@shopify/hydrogen/storefront-api-types';
-
-type SelectedPolicies = keyof Pick<
-  Shop,
-  'privacyPolicy' | 'shippingPolicy' | 'termsOfService' | 'refundPolicy'
->;
+import {
+  LegalArticle,
+  LegalEmpty,
+  LegalQuestion,
+  LegalTitle,
+} from '~/components/legal/LegalLayout';
+import {isEmptyHtml, prepareLegalHtml} from '~/components/legal/legalHtml';
+import {POLICIES} from '~/components/legal/policies';
 
 export const meta: Route.MetaFunction = ({data}) => {
-  return [{title: `Hydrogen | ${data?.policy.title ?? ''}`}];
+  return [
+    {title: `333bei | ${data?.title ?? ''}`},
+    {name: 'description', content: data?.summary ?? ''},
+  ];
 };
 
 export async function loader({params, context}: Route.LoaderArgs) {
-  if (!params.handle) {
-    throw new Response('No handle was passed in', {status: 404});
+  const known = POLICIES.find((p) => p.handle === params.handle);
+  if (!known) {
+    throw new Response('Policy not found', {status: 404});
   }
-
-  const policyName = params.handle.replace(
-    /-([a-z])/g,
-    (_: unknown, m1: string) => m1.toUpperCase(),
-  ) as SelectedPolicies;
 
   const data = await context.storefront.query(POLICY_CONTENT_QUERY, {
     variables: {
-      privacyPolicy: false,
-      shippingPolicy: false,
-      termsOfService: false,
-      refundPolicy: false,
-      [policyName]: true,
+      privacyPolicy: known.key === 'privacyPolicy',
+      shippingPolicy: known.key === 'shippingPolicy',
+      termsOfService: known.key === 'termsOfService',
+      refundPolicy: known.key === 'refundPolicy',
       language: context.storefront.i18n?.language,
     },
   });
 
-  const policy = data.shop?.[policyName];
-
-  if (!policy) {
-    throw new Response('Could not find the policy', {status: 404});
+  const {title, summary, about, ask} = known;
+  const policy = data.shop?.[known.key];
+  // A missing policy renders an honest empty state, not a 404:
+  // the footer links to every policy, even those not written yet.
+  if (!policy || isEmptyHtml(policy.body)) {
+    return {title, summary, about, ask, html: null, toc: [], updated: null};
   }
-
-  return {policy};
+  const {html, toc, updated} = prepareLegalHtml(policy.body);
+  return {title, summary, about, ask, html, toc, updated};
 }
 
 export default function Policy() {
-  const {policy} = useLoaderData<typeof loader>();
+  const {title, about, ask, html, toc, updated} =
+    useLoaderData<typeof loader>();
 
   return (
-    <div className="policy">
-      <br />
-      <br />
-      <div>
-        <Link to="/policies">← Back to Policies</Link>
-      </div>
-      <br />
-      <h1>{policy.title}</h1>
-      <div dangerouslySetInnerHTML={{__html: policy.body}} />
-    </div>
+    <article className="pb-8">
+      <LegalTitle
+        eyebrowLink={{to: '/policies', label: 'Informations légales'}}
+        updated={updated}
+      >
+        {title}
+      </LegalTitle>
+      {html ? (
+        <LegalArticle html={html} toc={toc}>
+          <LegalQuestion about={about} ask={ask} />
+        </LegalArticle>
+      ) : (
+        <LegalEmpty about={about} ask={ask} />
+      )}
+    </article>
   );
 }
 
