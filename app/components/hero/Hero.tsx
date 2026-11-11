@@ -10,7 +10,6 @@ import {
 } from '~/lib/gsap';
 import {onSiteLoaded} from '~/lib/siteLoader';
 import {HeroPhoto, type HeroImage} from './HeroPhoto';
-import {HERO_LOOK} from './look';
 
 /**
  * What the hero shows, edited by the client in Shopify (Contenu → Métaobjets
@@ -26,12 +25,12 @@ export type HeroContent = {
 };
 
 /**
- * Home hero: the photo, still (under an ink veil), the "mmm" logo above it,
- * and the featured drop, big, at the bottom.
+ * Home hero: the photo, still, with an ink gradient rising from the bottom
+ * under the caption (.hero-shade), the "mmm" logo above it, and the featured
+ * drop, big, at the bottom.
  * - Load (after the site loader, which opens onto this hero): the logo comes
  *   into focus (blur + opacity); the label is wiped in, butter; the name's
- *   letters rise out of their words, tilting upright; then a butter rule is
- *   drawn under the name.
+ *   letters rise out of their words, tilting upright.
  * - Scroll: nothing moves; the text scrolls away with the photo (the user
  *   doesn't want it to fade).
  * Reduced motion: everything at rest.
@@ -50,7 +49,6 @@ export function Hero({hero}: {hero: HeroContent}) {
 
     const tag = root.querySelector<HTMLElement>('[data-hero-label]');
     const title = root.querySelector<HTMLElement>('[data-hero-title]');
-    const rule = root.querySelector<HTMLElement>('[data-hero-rule]');
     // (cast: assigned in the context callback, TS would narrow it to null)
     let split = null as SplitText | null;
     let cancel = () => {};
@@ -72,7 +70,7 @@ export function Hero({hero}: {hero: HeroContent}) {
         );
 
       // No featured drop: the hero is just the photo and the logo
-      if (tag && title && rule) {
+      if (tag && title) {
         // The butter label is wiped in from the left
         intro.fromTo(
           tag,
@@ -100,12 +98,6 @@ export function Hero({hero}: {hero: HeroContent}) {
           },
           0.55,
         );
-        intro.fromTo(
-          rule,
-          {scaleX: 0},
-          {scaleX: 1, duration: 0.9, ease: CURVE_IN_OUT},
-          0.95,
-        );
       }
 
       cancel = onSiteLoaded(() => {
@@ -127,15 +119,12 @@ export function Hero({hero}: {hero: HeroContent}) {
       className="relative h-svh min-h-[560px] w-full overflow-hidden bg-ink"
     >
       <h1 className="sr-only">333bei</h1>
-      {/* The photo, still: colour kept, under an ink veil */}
+      {/* The photo, still: colour kept; ink rises from the bottom, under the
+          caption, and fades out before the logo */}
       <div aria-hidden className="absolute inset-0">
         <HeroPhoto image={hero.image} imageMobile={hero.imageMobile} />
       </div>
-      <div
-        aria-hidden
-        className="absolute inset-0 bg-ink"
-        style={{opacity: HERO_LOOK.veil}}
-      />
+      <div aria-hidden className="hero-shade absolute inset-0" />
 
       <div className="pointer-events-none absolute inset-0 grid place-items-center">
         <div
@@ -174,10 +163,6 @@ export function Hero({hero}: {hero: HeroContent}) {
               >
                 {feature.title}
               </span>
-              <span
-                data-hero-rule
-                className="mt-3 block h-[3px] w-16 origin-left bg-butter md:mt-4 md:w-24"
-              />
             </span>
           </Link>
         </div>

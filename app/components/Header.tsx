@@ -1,12 +1,4 @@
-import {
-  type RefObject,
-  Suspense,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import {Suspense, useCallback, useContext, useEffect, useRef} from 'react';
 import {
   Await,
   Link,
@@ -20,7 +12,7 @@ import {
   useAnalytics,
   useOptimisticCart,
 } from '@shopify/hydrogen';
-import {Menu, Search, ShoppingBag, User} from 'lucide-react';
+import {Search, ShoppingBag, User} from 'lucide-react';
 import type {HeaderQuery, CartApiQueryFragment} from 'storefrontapi.generated';
 import {useAside} from '~/components/Aside';
 import {Logo} from '~/components/Logo';
@@ -35,37 +27,36 @@ interface HeaderProps {
 }
 
 /**
- * Bar controls: 44px touch targets on phones, 36px from md. Glyphs rest a step
- * back (.bar-glyph) and come to full strength when pointed or focused; butter
- * marks the one that is "here" (current page, open panel). On phones the outer
- * buttons reach the screen edge (glyphs sit on the 12px gutter): their focus
- * ring is drawn inside so no side of it falls off screen.
+ * Header parts. Two ink blocks hold cells (.bar-cell in tailwind.css),
+ * a hairline apart. Butter rises in a cell when it is pointed or focused and
+ * fills it for the page you are on and for an open panel. 44px tall cells
+ * (touch targets) on every screen.
  */
-const iconButton =
-  'inline-flex size-11 shrink-0 items-center justify-center transition-colors duration-200 ease-out aria-expanded:bg-butter aria-expanded:text-ink aria-[current=page]:bg-butter aria-[current=page]:text-ink max-md:focus-visible:outline-offset-[-2px] md:size-9';
-const glyph = 'bar-glyph size-[18px]';
+const block =
+  'pointer-events-auto flex h-(--bar-block) items-stretch bg-ink text-paper print:bg-transparent print:text-ink';
+const cell =
+  'bar-cell flex shrink-0 items-center justify-center gap-1.5 px-3 text-[0.8125rem] font-bold whitespace-nowrap md:px-3.5';
+/** Hairline before every cell but a block's first */
+const divided = 'border-l border-paper/15';
+const glyph = 'size-[18px]';
 
 /**
- * Fixed header.
- * - transparent over the home hero (paper words, no small logo: the hero's
- *   sticker is the logo) until the hero's bottom passes under the bar
- * - frosted (translucent paper + backdrop blur) everywhere else
+ * Fixed header: no full-width bar, two ink blocks set on the page, the same
+ * over the home photo and on every page.
+ * - left: the logo (home), the menu links (md+) or "Menu" (phones)
+ * - right: search, account (md+), cart with its count
  * - the search opens over it, full screen (SearchIndex)
  * - it follows the page being opened: while the page transition holds a
- *   navigation, the bar already shows the destination
+ *   navigation, the cell of the destination is already filled
  */
 export function Header({header, links, isLoggedIn, cart}: HeaderProps) {
   const {shop} = header;
-  const headerRef = useRef<HTMLElement>(null);
   const searchToggleRef = useRef<HTMLButtonElement>(null);
   const {pathname} = useLocation();
   const destination = useDestination();
   const isHome = isHomePath(pathname);
-  const heroUnderBar = useHeroUnderBar(isHome, headerRef);
   const {type, open, closeIf} = useAside();
   const searchOpen = type === 'search';
-  const overlay =
-    isHome && isHomePath(destination) && heroUnderBar && !searchOpen;
 
   // SearchIndex puts focus back on the toggle itself, once the bar is no
   // longer inert under it
@@ -81,51 +72,35 @@ export function Header({header, links, isLoggedIn, cart}: HeaderProps) {
 
   return (
     <>
+      {/* The header box lets clicks through: only the blocks catch them */}
       <header
-        ref={headerRef}
         data-site-header
-        data-overlay={overlay || undefined}
-        className={cn(
-          'fixed inset-x-0 top-0 z-40 grid grid-cols-[1fr_auto_1fr] grid-rows-[var(--header-h)] items-center border-b site-gutter transition-[background-color,border-color,backdrop-filter,color,opacity] duration-300 ease-out',
-          'print:absolute print:border-transparent print:bg-transparent print:text-ink print:backdrop-blur-none',
-          overlay
-            ? 'border-transparent bg-transparent text-paper'
-            : searchOpen
-              ? 'border-border bg-paper/95 text-ink backdrop-blur-xl'
-              : 'border-border bg-paper/70 text-ink backdrop-blur-xl backdrop-saturate-150',
-        )}
+        className="site-gutter pointer-events-none fixed inset-x-0 top-0 z-40 flex items-start justify-between gap-3 pt-(--bar-top) transition-opacity duration-300 ease-out print:absolute"
       >
-        <a href="#contenu" className="skip-link" onClick={skipToContent}>
+        <a
+          href="#contenu"
+          className="skip-link pointer-events-auto"
+          onClick={skipToContent}
+        >
           Aller au contenu
         </a>
-        <div className="flex items-center print:invisible">
-          {/* Burger on mobile only; desktop gets the links inline */}
-          <MenuToggle />
+        <div className={block}>
+          <Link
+            prefetch="intent"
+            to="/"
+            aria-label={`${shop.name} — accueil`}
+            className="grid shrink-0 place-items-center px-3 focus-visible:outline-butter focus-visible:-outline-offset-4"
+          >
+            <Logo className="h-[22px] w-auto md:h-6" />
+          </Link>
           <DesktopNav links={links} destination={destination} />
+          <MenuToggle />
         </div>
-        {/* On the home hero the big sticker is the logo: the small one steps
-            aside (and out of the tab order) until the hero has gone by */}
-        <Link
-          prefetch="intent"
-          to="/"
-          aria-label={`${shop.name} — accueil`}
-          tabIndex={overlay ? -1 : undefined}
-          aria-hidden={overlay || undefined}
-          className={cn('block', overlay && 'pointer-events-none')}
-        >
-          <Logo
-            className={cn(
-              'h-8 w-auto transition-[opacity,translate] duration-300 ease-out md:h-10 print:translate-y-0 print:opacity-100',
-              overlay && 'translate-y-1 opacity-0 motion-reduce:translate-y-0',
-            )}
-          />
-        </Link>
-        <div className="-mr-[13px] flex items-center justify-end md:-mr-[9px] md:gap-1 print:invisible">
-          <AccountLink isLoggedIn={isLoggedIn} />
+        <div className={cn(block, 'print:invisible')}>
           <button
             ref={searchToggleRef}
             type="button"
-            className={iconButton}
+            className={cn(cell, 'min-w-11')}
             onClick={(event) =>
               searchOpen ? closeSearch() : open('search', event.currentTarget)
             }
@@ -137,17 +112,18 @@ export function Header({header, links, isLoggedIn, cart}: HeaderProps) {
           >
             <Search aria-hidden className={glyph} strokeWidth={1.75} />
           </button>
+          <AccountLink isLoggedIn={isLoggedIn} />
           <CartToggle cart={cart} />
         </div>
       </header>
-      {/* Outside <header>: its backdrop-filter would contain a fixed child */}
+      {/* Outside <header>: the panel covers the page and the header */}
       <SearchIndex
         open={searchOpen}
         onClose={closeSearch}
         toggleRef={searchToggleRef}
       />
-      {/* Pages other than home start below the fixed header (bar + hairline) */}
-      {!isHome && <div aria-hidden className="h-[calc(var(--header-h)+1px)]" />}
+      {/* Pages other than home start below the header's band */}
+      {!isHome && <div aria-hidden className="h-(--header-h)" />}
     </>
   );
 }
@@ -177,54 +153,6 @@ function useDestination() {
     if (blocker.location) held = blocker.location.pathname;
   });
   return held ?? navigation.location?.pathname ?? pathname;
-}
-
-/**
- * True while the home hero ([data-hero]) still lies under the bar, i.e. its
- * bottom edge is below the bar's. Starts true so the server renders the
- * transparent bar on home.
- */
-function useHeroUnderBar(
-  active: boolean,
-  headerRef: RefObject<HTMLElement | null>,
-) {
-  const [under, setUnder] = useState(true);
-  useEffect(() => {
-    if (!active) return;
-    let bar = 0;
-    let frame = 0;
-    const measureBar = () => {
-      const header = headerRef.current;
-      // First grid row = the bar (the search row unfolds below it)
-      bar = header
-        ? parseFloat(getComputedStyle(header).gridTemplateRows) || 0
-        : 0;
-    };
-    const update = () => {
-      frame = 0;
-      const hero = document.querySelector<HTMLElement>('[data-hero]');
-      setUnder(Boolean(hero && hero.getBoundingClientRect().bottom > bar));
-    };
-    const onScroll = () => {
-      if (!frame) frame = requestAnimationFrame(update);
-    };
-    const onResize = () => {
-      measureBar();
-      onScroll();
-    };
-    measureBar();
-    update();
-    window.addEventListener('scroll', onScroll, {passive: true});
-    window.addEventListener('resize', onResize);
-    return () => {
-      cancelAnimationFrame(frame);
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onResize);
-      // The next visit to home starts at the top, under the hero
-      setUnder(true);
-    };
-  }, [active, headerRef]);
-  return under;
 }
 
 export type MenuLink = {id: string; title: string; url: string};
@@ -300,10 +228,8 @@ function linkFor(links: MenuLink[], pathname: string) {
 }
 
 /**
- * Desktop links. The page you are on (or going to) sits on a butter block;
- * the block glides under the pointed or focused link and comes back when the
- * pointer leaves. Whatever sits on the block is ink, the other words take the
- * bar's colour (paper over the hero, ink elsewhere).
+ * Desktop links, cells of the left block. The cell of the page you are on (or
+ * being taken to) is filled butter; the others fill as they are pointed.
  */
 function DesktopNav({
   links,
@@ -312,81 +238,15 @@ function DesktopNav({
   links: MenuLink[];
   destination: string;
 }) {
-  const navRef = useRef<HTMLElement>(null);
-  const blockRef = useRef<HTMLSpanElement>(null);
   const {pathname} = useLocation();
-  const [ready, setReady] = useState(false);
   const shown = linkFor(links, pathname); // aria-current: the page on screen
-  const resting = linkFor(links, destination)?.id; // the block: where you are going
-
-  const place = useCallback((target: HTMLElement | null) => {
-    const nav = navRef.current;
-    const block = blockRef.current;
-    if (!nav || !block) return;
-    // The word on the block turns ink (set here, outside React's renders)
-    nav.querySelectorAll('a[data-on]').forEach((link) => {
-      if (link !== target) link.removeAttribute('data-on');
-    });
-    if (!target) {
-      block.style.opacity = '0';
-      return;
-    }
-    target.setAttribute('data-on', '');
-    const n = nav.getBoundingClientRect();
-    const r = target.getBoundingClientRect();
-    // 1px-wide block scaled to the link's box: transform only, no layout work
-    const transform = `translateX(${r.left - n.left}px) scaleX(${r.width})`;
-    if (block.style.opacity !== '1') {
-      // Hidden: appear in place instead of gliding in from a stale position
-      block.style.transition = 'none';
-      block.style.transform = transform;
-      void block.offsetWidth;
-      block.style.transition = '';
-    } else {
-      block.style.transform = transform;
-    }
-    block.style.opacity = '1';
-  }, []);
-
-  const rest = useCallback(
-    () =>
-      place(
-        navRef.current?.querySelector<HTMLElement>('a[data-active]') ?? null,
-      ),
-    [place],
-  );
-
-  useEffect(() => {
-    rest();
-    // First placement is instant; glide only afterwards
-    const frame = requestAnimationFrame(() => setReady(true));
-    return () => cancelAnimationFrame(frame);
-  }, [resting, rest]);
-
-  useEffect(() => {
-    window.addEventListener('resize', rest);
-    void document.fonts?.ready.then(rest); // Sora changes the widths once loaded
-    return () => window.removeEventListener('resize', rest);
-  }, [rest]);
+  const resting = linkFor(links, destination)?.id; // filled: where you are going
 
   return (
-    <nav
-      ref={navRef}
-      aria-label="Menu principal"
-      className="relative -ml-2 hidden md:flex"
-      onPointerLeave={rest}
-    >
-      <span
-        ref={blockRef}
-        aria-hidden
-        className={cn(
-          'pointer-events-none absolute inset-y-0 left-0 w-px origin-left bg-butter opacity-0 forced-colors:hidden',
-          ready && 'nav-block',
-        )}
-      />
-      <ul className="flex items-center gap-1">
+    <nav aria-label="Menu principal" className="hidden md:flex print:invisible">
+      <ul className="flex">
         {links.map((link) => (
-          <li key={link.id} className="mb-0">
+          <li key={link.id} className="mb-0 flex">
             <Link
               prefetch="intent"
               to={link.url}
@@ -398,18 +258,7 @@ function DesktopNav({
                   : undefined
               }
               data-active={resting === link.id || undefined}
-              onPointerEnter={(event) => {
-                if (event.pointerType === 'mouse') place(event.currentTarget);
-              }}
-              onFocus={(event) => place(event.currentTarget)}
-              onBlur={rest}
-              className={cn(
-                'relative z-10 block px-2 py-1 text-sm font-bold whitespace-nowrap opacity-(--bar-rest) transition-[color,opacity] duration-200 ease-out hover:opacity-100 focus-visible:opacity-100 data-[active]:opacity-100 data-[on]:text-ink data-[on]:opacity-100',
-                'forced-colors:aria-[current]:underline forced-colors:aria-[current]:decoration-2 forced-colors:aria-[current]:underline-offset-4',
-                // Before the block is placed (server render, pre-hydration) the
-                // current word carries its own butter, at the block's size
-                !ready && 'data-[active]:bg-butter data-[active]:text-ink',
-              )}
+              className={cn(cell, divided)}
             >
               {link.title}
             </Link>
@@ -510,12 +359,14 @@ function AccountLabel({isLoggedIn}: {isLoggedIn: Promise<boolean>}) {
 
 function AccountLink({isLoggedIn}: {isLoggedIn: Promise<boolean>}) {
   const {pathname} = useLocation();
+  const here = /^\/account(\/|$)/.test(pathname);
   return (
     <Link
       prefetch="intent"
       to="/account"
-      aria-current={/^\/account(\/|$)/.test(pathname) ? 'page' : undefined}
-      className={cn(iconButton, 'max-md:hidden')}
+      aria-current={here ? 'page' : undefined}
+      data-active={here || undefined}
+      className={cn(cell, divided, 'min-w-11 max-md:hidden')}
     >
       <User aria-hidden className={glyph} strokeWidth={1.75} />
       <span className="sr-only">
@@ -530,13 +381,12 @@ function MenuToggle() {
   return (
     <button
       type="button"
-      className={cn(iconButton, '-ml-[13px] md:hidden')}
+      className={cn(cell, divided, 'md:hidden print:invisible')}
       onClick={(event) => open('mobile', event.currentTarget)}
-      aria-label="Menu"
       aria-haspopup="dialog"
       aria-expanded={type === 'mobile'}
     >
-      <Menu aria-hidden className={glyph} strokeWidth={1.75} />
+      Menu
     </button>
   );
 }
@@ -551,7 +401,8 @@ function CartBadge({count}: {count: number}) {
     <a
       href="/cart"
       aria-current={onCartPage ? 'page' : undefined}
-      className={cn(iconButton, 'relative')}
+      data-active={onCartPage || undefined}
+      className={cn(cell, divided, 'min-w-11')}
       aria-label={`Panier, ${count} article${count > 1 ? 's' : ''}`}
       onClick={(event) => {
         // New tab / window: let the browser follow the link
@@ -579,11 +430,8 @@ function CartBadge({count}: {count: number}) {
     >
       <ShoppingBag aria-hidden className={glyph} strokeWidth={1.75} />
       {count > 0 && (
-        // Square count on the bag's corner; ink on orange (4.9:1)
-        <span
-          aria-hidden
-          className="absolute top-[calc(50%-18px)] left-[calc(50%+2px)] grid h-4 min-w-4 place-items-center bg-orange px-1 text-[10px] leading-none font-bold text-ink tabular-nums"
-        >
+        // Butter on ink, ink once the cell turns butter (.bar-count)
+        <span aria-hidden className="bar-count tabular-nums">
           {count}
         </span>
       )}

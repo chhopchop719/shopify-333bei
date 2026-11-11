@@ -10,7 +10,6 @@ import strawberryBack from '~/assets/loader/strawb3rry-tee-v2-2.avif';
 import templeBaby from '~/assets/loader/t3mple-baby-tee-1.avif';
 import temple from '~/assets/loader/t3mple-tee-1.avif';
 import {getLenis} from '~/components/motion/SmoothScroll';
-import {HERO_LOOK} from '~/components/hero/look';
 import {HeroPhoto} from '~/components/hero/HeroPhoto';
 import {CURVE_IN_OUT, CURVE_OUT, gsap, prefersReducedMotion} from '~/lib/gsap';
 import {GATE_TIMER, LOADER_DONE, LOADER_MAX} from '~/lib/siteLoader';
@@ -43,7 +42,6 @@ const MAX_WAIT = 3.5; // s: don't wait longer than this for the page to load
 export function SiteLoader({isHome}: {isHome: boolean}) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [gone, setGone] = useState(false);
-  const base = HERO_LOOK;
   // The hero's photo (set in Shopify): the last frame must be the same picture
   const hero = useRouteLoaderData<typeof homeLoader>('routes/_index')?.hero;
 
@@ -151,7 +149,8 @@ export function SiteLoader({isHome}: {isHome: boolean}) {
       if (isHome && hero?.isConnected) {
         // Last frame: the hero photo, framed like the product shots (5:7,
         // cover-fitted), in a box that then grows to the real hero's size and
-        // place while its ink veil comes in, and hands over to the real hero
+        // place while its shade (the hero's gradient) comes in, and hands
+        // over to the real hero
         const r = frame.getBoundingClientRect();
         const target = document
           .querySelector<HTMLElement>('[data-hero]')
@@ -184,7 +183,7 @@ export function SiteLoader({isHome}: {isHome: boolean}) {
           exit.fromTo(
             veil,
             {opacity: 0},
-            {opacity: base.veil, duration: 0.95, ease: CURVE_IN_OUT},
+            {opacity: 1, duration: 0.95, ease: CURVE_IN_OUT},
             '<',
           );
         }
@@ -234,7 +233,7 @@ export function SiteLoader({isHome}: {isHome: boolean}) {
         </p>
       </div>
       {isHome && (
-        // The hero at rest (same photo, veil added as it grows), born in the frame
+        // The hero at rest (same photo, shade added as it grows), born in the frame
         <div data-loader-hero className="site-loader-hero">
           <HeroPhoto
             image={hero?.image ?? null}
@@ -242,7 +241,7 @@ export function SiteLoader({isHome}: {isHome: boolean}) {
           />
           <div
             data-loader-veil
-            className="absolute inset-0 bg-ink"
+            className="hero-shade absolute inset-0"
             style={{opacity: 0}}
           />
         </div>

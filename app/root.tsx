@@ -262,9 +262,7 @@ export function ErrorBoundary() {
         'pb-24 md:pb-32',
         // home is full-bleed under a header without spacer: put both back
         // (same height as the header's spacer: bar + hairline)
-        Boolean(data) &&
-          isHomePath(pathname) &&
-          'site-gutter pt-[calc(var(--header-h)+1px)]',
+        Boolean(data) && isHomePath(pathname) && 'site-gutter pt-(--header-h)',
       )}
     >
       <RevealTitle className="mt-8 mb-6 text-4xl leading-none tracking-tight normal-case md:mt-12 md:text-6xl">

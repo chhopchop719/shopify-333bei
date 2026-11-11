@@ -313,6 +313,22 @@ html {
   object-fit: cover;
 }
 
+/* ---------- Home hero shade (Hero.tsx, and SiteLoader's last frame) ----------
+   Ink rising from the bottom so the caption reads on any photo, eased over
+   several stops (no banding) and gone before the logo in the middle; the
+   top of the photo stays untouched. */
+.hero-shade {
+  background: linear-gradient(
+    to top,
+    rgb(23 22 21 / 0.8) 0%,
+    rgb(23 22 21 / 0.6) 16%,
+    rgb(23 22 21 / 0.36) 32%,
+    rgb(23 22 21 / 0.15) 46%,
+    rgb(23 22 21 / 0.04) 56%,
+    rgb(23 22 21 / 0) 64%
+  );
+}
+
 /* ---------- Sticker logo (see StickerLogo.tsx) ---------- */
 .sticker-mark {
   position: relative;
@@ -325,14 +341,17 @@ html {
   }
 }
 
-/* ---------- Header (see Header.tsx) ---------- */
+/* ---------- Header (see Header.tsx) ----------
+   No full-width bar: two ink blocks set on the page (logo + menu, tools),
+   the same over the home photo and on every page. */
 :root {
-  /* The bar's height (the search panel's top row matches it) */
+  /* The band the blocks sit in: pages start below it, and the search
+     panel's top row has its height ("Fermer" where the tools are) */
   --header-h: 3.5rem;
-  /* Resting strength of the bar's words and glyphs: one step back, still
-     readable (ink .72 over the frosted bar stays above 4.5:1). Pointed,
-     focused or "here": full strength. */
-  --bar-rest: 0.72;
+  /* The blocks: 44px tall (touch targets), centred in the band */
+  --bar-block: 2.75rem;
+  --bar-top: calc((var(--header-h) - var(--bar-block)) / 2);
+  /* Resting strength of the sheets' close glyphs (.bar-glyph) */
   --bar-rest-icon: 0.72;
 }
 @media (min-width: 48rem) {
@@ -340,24 +359,72 @@ html {
     --header-h: 4rem;
   }
 }
-[data-site-header] {
-  --bar-ground-fg: var(--ink);
+/* A cell of the blocks. Butter rises from its bottom when it is pointed or
+   focused, and fills it for the page you are on (or being taken to) and for
+   an open panel. The word and its fill change on the same element, at the
+   same pace: nothing is measured, nothing can fall out of place. */
+.bar-cell {
+  position: relative;
+  isolation: isolate;
+  transition: color 340ms var(--ease-out);
 }
-/* Over the hero photo: paper words at full strength (dimmed paper fails
-   contrast on the veiled photo), glyphs barely back (still above 3:1) */
-[data-site-header][data-overlay] {
-  --bar-ground-fg: var(--paper);
-  --bar-rest: 1;
-  --bar-rest-icon: 0.85;
+.bar-cell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--butter);
+  clip-path: inset(100% 0 0 0);
+  transition: clip-path 340ms var(--ease-out);
 }
-/* Focus ring in the colour that reads on the bar's ground: paper over the
-   hero, ink on the frosted bar (the orange ring disappears on the photo, and
-   the ring sits outside the butter block, on that ground) */
-[data-site-header] :focus-visible {
-  outline-color: var(--bar-ground-fg);
+.bar-cell:is([data-active], [aria-expanded='true'], :focus-visible) {
+  color: var(--ink);
 }
-/* Icon glyphs (bar, search, sheets): come forward when their control is
-   pointed, focused, open or current */
+.bar-cell:is([data-active], [aria-expanded='true'], :focus-visible)::before {
+  clip-path: inset(0);
+}
+@media (hover: hover) {
+  .bar-cell:hover {
+    color: var(--ink);
+  }
+  .bar-cell:hover::before {
+    clip-path: inset(0);
+  }
+}
+/* Ring inside the cell, in ink: the orange one would barely show on butter */
+.bar-cell:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: -5px;
+}
+/* Cart count: butter on ink, ink once its cell turns butter */
+.bar-count {
+  color: var(--butter);
+  transition: color 340ms var(--ease-out);
+}
+.bar-cell:is([data-active], [aria-expanded='true'], :focus-visible) .bar-count {
+  color: var(--ink);
+}
+@media (hover: hover) {
+  .bar-cell:hover .bar-count {
+    color: var(--ink);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bar-cell,
+  .bar-cell::before,
+  .bar-count {
+    transition: none;
+  }
+}
+/* Forced colours drop the butter: the filled cell is underlined instead */
+@media (forced-colors: active) {
+  .bar-cell[data-active] {
+    text-decoration: underline 2px;
+    text-underline-offset: 4px;
+  }
+}
+/* Close glyphs of the sheets (Aside, ui/sheet): come forward when their
+   control is pointed or focused */
 .bar-glyph {
   opacity: var(--bar-rest-icon);
   transition: opacity 200ms var(--ease-out);
@@ -502,7 +569,7 @@ html body[data-scroll-locked] {
 }
 
 /* ---------- Header navigation ---------- */
-/* Butter block under the current link glides to the hovered one */
+/* Butter block gliding between links (contents of the legal pages) */
 .nav-block {
   transition:
     transform 240ms var(--ease-out),
