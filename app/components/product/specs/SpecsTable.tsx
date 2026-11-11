@@ -88,7 +88,7 @@ export function SpecsTable({specs}: {specs: ProductSpecs}) {
           >
             <TableHead
               scope="row"
-              className="h-auto w-[9.5rem] py-3 pl-0 align-top text-xs font-bold whitespace-normal text-ink/60"
+              className="h-auto w-[7.5rem] py-3 pl-0 sm:w-[9.5rem] align-top text-xs font-bold whitespace-normal text-ink/60"
             >
               <span className="flex items-center gap-2">
                 <Icon

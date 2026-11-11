@@ -35,6 +35,12 @@ export function RevealTitle({
           ease: CURVE_OUT,
           stagger: 0.025,
           paused: true,
+          // Back to plain text once risen: the lines were cut for the width
+          // at load, and must rewrap when the phone turns or the window
+          // resizes (same layout, the masks give back their extra room)
+          onComplete: () => {
+            split.revert();
+          },
         });
         // After the site loader, if it's showing (right away otherwise)
         const cancel = onSiteLoaded(() => {

@@ -82,7 +82,9 @@ export function ProductItem({
 
   return (
     <Link
-      className={cn('group block', className)}
+      // container: the caption's layout follows the card's width, not the
+      // screen's (a card is narrow in a 3-up grid as on a phone)
+      className={cn('group @container block', className)}
       prefetch="intent"
       to={variantUrl}
     >
@@ -154,9 +156,10 @@ export function ProductItem({
               ))}
             </ul>
           )}
-          {/* Phones: price under a title that may take two lines; wider: one row */}
-          <div className="flex flex-col items-start gap-1 text-lg leading-[1.05] font-extrabold tracking-tight md:flex-row md:items-baseline md:justify-between md:gap-3 md:text-xl">
-            <h3 className="line-clamp-2 min-w-0 md:line-clamp-1">
+          {/* Narrow card: price under a title that may take two lines; from
+              20rem wide (room for a full name and its price): one row */}
+          <div className="flex flex-col items-start gap-1 text-lg leading-[1.05] font-extrabold tracking-tight md:text-xl @xs:flex-row @xs:items-baseline @xs:justify-between @xs:gap-3">
+            <h3 className="line-clamp-2 min-w-0 @xs:line-clamp-1">
               {product.title}
             </h3>
             <p className="flex shrink-0 items-baseline gap-2 tabular-nums">

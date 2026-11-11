@@ -168,7 +168,9 @@ export function Hero({hero}: {hero: HeroContent}) {
               </span>
               <span
                 data-hero-title
-                className="mt-3 block text-[clamp(2.75rem,8vw,7rem)] leading-[0.86] font-extrabold tracking-tight uppercase transition-colors duration-300 ease-out group-hover:text-butter md:mt-4"
+                // Phones: scales with the screen so a long word still fits
+                // a 320px one (each word is a mask and can't break)
+                className="mt-3 block text-[clamp(2.25rem,11.5vw,7rem)] leading-[0.86] md:text-[clamp(2.75rem,8vw,7rem)] font-extrabold tracking-tight uppercase transition-colors duration-300 ease-out group-hover:text-butter md:mt-4"
               >
                 {feature.title}
               </span>

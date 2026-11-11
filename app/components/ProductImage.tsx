@@ -49,10 +49,12 @@ export function ProductImage({
   }
 
   return (
-    <div className="relative -mx-3 md:mx-0">
+    // Phones and tablets: the strip runs to the screen edges (the page's
+    // gutter given back inside); lg: a grid in its column
+    <div className="relative -mx-(--gutter) lg:mx-0">
       <div
         ref={trackRef}
-        className="product-gallery flex items-start snap-x snap-mandatory scroll-px-3 gap-2 overflow-x-auto px-3 [scrollbar-width:none] md:snap-none md:overflow-visible md:px-0 [&::-webkit-scrollbar]:hidden"
+        className="product-gallery flex items-start snap-x snap-mandatory scroll-px-(--gutter) gap-2 overflow-x-auto px-(--gutter) [scrollbar-width:none] lg:snap-none lg:overflow-visible lg:px-0 [&::-webkit-scrollbar]:hidden"
         aria-label={`Photos de ${title}`}
         role="region"
       >
@@ -68,7 +70,7 @@ export function ProductImage({
               alt={image.altText || `${title}, photo ${i + 1}`}
               data={image}
               loading={i === 0 ? 'eager' : 'lazy'}
-              sizes="(min-width: 48rem) 30vw, 85vw"
+              sizes="(min-width: 64rem) 30vw, (min-width: 48rem) 62vw, 85vw"
               className="size-full object-cover"
             />
           </figure>
@@ -76,7 +78,7 @@ export function ProductImage({
       </div>
       {images.length > 1 && (
         <p
-          className="mt-3 px-3 text-xs tabular-nums text-muted-foreground md:hidden"
+          className="mt-3 px-(--gutter) text-xs tabular-nums text-muted-foreground lg:hidden"
           aria-live="polite"
         >
           {Math.min(index + 1, images.length)} / {images.length}

@@ -195,12 +195,16 @@ export default function Product() {
     <>
       <div
         ref={pageRef}
-        className="grid grid-cols-[minmax(0,1fr)] gap-8 pt-3 md:grid-cols-[auto_minmax(0,1fr)] md:gap-10 md:pt-5 lg:gap-16"
+        // Photos and panel side by side from lg only: on a tablet the panel
+        // would be left a 230px strip next to the gallery
+        className="grid grid-cols-[minmax(0,1fr)] gap-8 pt-3 md:gap-10 md:pt-5 lg:grid-cols-[auto_minmax(0,1fr)] lg:gap-16"
       >
         <ProductImage images={images} title={title} />
 
-        <div className="md:sticky md:top-[calc(4rem+1.25rem)] md:max-w-[36rem] md:self-start md:pb-10">
-          <RevealTitle className="text-[clamp(2.25rem,5vw,4rem)] leading-[0.92] font-extrabold tracking-tight uppercase text-balance">
+        {/* @container: the title is sized on the panel's width (cqi), so a
+            long name always fits its column, whatever the screen */}
+        <div className="@container md:max-w-[36rem] lg:sticky lg:top-[calc(var(--header-h)+1.25rem)] lg:self-start lg:pb-10">
+          <RevealTitle className="text-[clamp(2rem,13cqi,4rem)] leading-[0.92] font-extrabold tracking-tight uppercase text-balance">
             {title}
           </RevealTitle>
 

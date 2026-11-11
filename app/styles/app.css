@@ -128,7 +128,10 @@
 .collections-grid {
   display: grid;
   grid-gap: 1.5rem;
-  grid-template-columns: repeat(auto-fit, minmax(var(--grid-item-width), 1fr));
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(var(--grid-item-width), 100%), 1fr)
+  );
   margin-bottom: 2rem;
 }
 
@@ -173,7 +176,10 @@
 .blog-grid {
   display: grid;
   grid-gap: 1.5rem;
-  grid-template-columns: repeat(auto-fit, minmax(var(--grid-item-width), 1fr));
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(var(--grid-item-width), 100%), 1fr)
+  );
   margin-bottom: 2rem;
 }
 

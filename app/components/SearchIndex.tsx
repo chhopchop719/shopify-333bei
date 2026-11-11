@@ -96,9 +96,12 @@ export function SearchIndex({
   const searchUrl = `/search?q=${encodeURIComponent(term)}`;
 
   let count = 'Chargement…';
+  // Dropped on phones, where the top row is shared with "Fermer"
+  let countLead = '';
   if (products && data?.error && !products.length) count = 'Indisponible';
   else if (products && !term) {
-    count = `Tout le catalogue · ${products.length} produit${products.length > 1 ? 's' : ''}`;
+    countLead = 'Tout le catalogue · ';
+    count = `${products.length} produit${products.length > 1 ? 's' : ''}`;
   } else if (products) {
     count = matches.length
       ? `${matches.length} produit${matches.length > 1 ? 's' : ''}`
@@ -184,6 +187,7 @@ export function SearchIndex({
         <div className="flex h-(--header-h) shrink-0 items-center gap-4 text-2xs font-bold tracking-[0.08em] uppercase">
           <span className="text-butter">Recherche</span>
           <span aria-hidden className="truncate text-paper/55 tabular-nums">
+            {countLead && <span className="max-sm:hidden">{countLead}</span>}
             {count}
           </span>
           <button
@@ -253,7 +257,9 @@ export function SearchIndex({
               setActive(next);
               reveal(next);
             }}
-            className="m-0 block w-full rounded-none border-0 bg-transparent p-0 pt-1 pb-5 text-[clamp(1.5rem,3.4vw,2.375rem)] leading-tight font-extrabold tracking-[-0.025em] text-paper uppercase caret-butter outline-none placeholder:text-paper/30 [&::-webkit-search-cancel-button]:hidden"
+            // Phones: the rows' size; wider, it grows with the screen.
+            // Ellipsis: a placeholder too long for the field is never cut dry
+            className="m-0 block w-full rounded-none border-0 bg-transparent p-0 pt-1 pb-5 text-[1.625rem] leading-tight font-extrabold tracking-[-0.025em] text-ellipsis text-paper uppercase caret-butter outline-none placeholder:text-paper/30 md:text-[clamp(1.75rem,3.4vw,2.375rem)] [&::-webkit-search-cancel-button]:hidden"
           />
         </Form>
         <span aria-live="polite" className="sr-only">

@@ -20,7 +20,7 @@ type CartSummaryProps = {
 export function CartSummary({cart, layout}: CartSummaryProps) {
   const className =
     layout === 'page'
-      ? 'flex flex-col gap-5 border-t pt-5 md:sticky md:top-[calc(4rem+1.25rem)] md:border-t-0 md:bg-concrete md:p-6'
+      ? 'flex flex-col gap-5 border-t pt-5 lg:sticky lg:top-[calc(var(--header-h)+1.25rem)] lg:border-t-0 lg:bg-concrete lg:p-6'
       : 'sticky bottom-0 -mx-5 mt-4 flex flex-col gap-4 border-t bg-paper px-5 pt-4 pb-5';
   const summaryId = useId();
   const discountsHeadingId = useId();

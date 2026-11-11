@@ -533,9 +533,17 @@ html body[data-scroll-locked] {
 .product-frame {
   width: min(85vw, calc((100svh - 9rem) * 0.75));
 }
+/* Tablets (photos above the panel): narrower frames, the next photo shows
+   at the edge and says the strip scrolls */
 @media (min-width: 48rem) {
-  /* Two photos per row; the gallery is capped so one row always fits the
-     viewport height (header 4rem + top 1.25rem + bottom 1.25rem). */
+  .product-frame {
+    width: min(62vw, calc((100svh - 9rem) * 0.75));
+  }
+}
+@media (min-width: 64rem) {
+  /* Beside the panel: two photos per row; the gallery is capped so one row
+     always fits the viewport height (header 4rem + top 1.25rem + bottom
+     1.25rem). */
   .product-gallery {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));

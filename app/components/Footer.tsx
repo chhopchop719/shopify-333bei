@@ -43,7 +43,9 @@ export function Footer({footer: footerPromise, header}: FooterProps) {
   return (
     <footer className="mt-16 bg-ink text-paper md:mt-20">
       <div className="site-gutter pt-10 pb-6 md:pt-14 md:pb-8">
-        <div className="flex flex-col gap-12 md:flex-row md:justify-between md:gap-16">
+        {/* Side by side from lg: at tablet width the field would be squeezed
+            next to the three link columns */}
+        <div className="flex flex-col gap-12 lg:flex-row lg:justify-between lg:gap-16">
           <nav
             aria-label="Pied de page"
             className="grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-3 md:gap-x-16"
@@ -111,12 +113,12 @@ export function Footer({footer: footerPromise, header}: FooterProps) {
             </Suspense>
           </nav>
 
-          <div className="w-full md:max-w-[26rem]">
+          <div className="w-full sm:max-w-[26rem]">
             <h2 className="text-xs font-normal text-paper/60">Nous écrire</h2>
             <Form
               action="/pages/contact"
               method="get"
-              className="mt-2 flex max-w-none items-center gap-4 border-b-[1.5px] border-paper/35 transition-colors focus-within:border-paper"
+              className="mt-2 flex items-center gap-4 border-b-[1.5px] border-paper/35 transition-colors focus-within:border-paper"
             >
               <label htmlFor="footer-question" className="sr-only">
                 Votre question

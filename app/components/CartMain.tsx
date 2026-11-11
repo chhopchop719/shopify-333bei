@@ -58,7 +58,7 @@ export function CartMain({layout, cart: originalCart}: CartMainProps) {
         className={cn(
           layout === 'aside'
             ? 'flex flex-1 flex-col'
-            : 'grid gap-10 md:grid-cols-[minmax(0,1fr)_380px] md:items-start',
+            : 'grid gap-10 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start',
         )}
       >
         <p id="cart-lines" className="sr-only">
