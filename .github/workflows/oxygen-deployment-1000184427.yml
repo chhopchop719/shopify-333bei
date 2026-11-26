@@ -1,0 +1,45 @@
+# Don't change the line below!
+#! oxygen_storefront_id: 1000184427
+
+# Builds the storefront and deploys it to Oxygen on every push.
+# Oxygen picks the environment from the branch: `main` goes to Production,
+# a branch linked to no environment goes to Preview.
+# Needs the repository secret OXYGEN_DEPLOYMENT_TOKEN_1000184427 (Shopify
+# admin → Hydrogen → 333bei → Storefront settings → Oxygen deployments).
+name: Storefront 1000184427
+on: [push]
+
+permissions:
+  contents: read
+  deployments: write
+
+concurrency:
+  group: oxygen-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy to Oxygen
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build and publish to Oxygen
+        run: pnpm exec shopify hydrogen deploy
+        env:
+          SHOPIFY_HYDROGEN_DEPLOYMENT_TOKEN: ${{ secrets.OXYGEN_DEPLOYMENT_TOKEN_1000184427 }}
