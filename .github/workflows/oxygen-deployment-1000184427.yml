@@ -43,3 +43,11 @@ jobs:
         run: pnpm exec shopify hydrogen deploy
         env:
           SHOPIFY_HYDROGEN_DEPLOYMENT_TOKEN: ${{ secrets.OXYGEN_DEPLOYMENT_TOKEN_1000184427 }}
+
+      # In CI the CLI writes the deployment's URL to h2_deploy_log.json
+      # instead of printing it: show it in the log and on the run's page
+      - name: Show the deployment URL
+        run: |
+          url=$(jq -r '.url' h2_deploy_log.json)
+          echo "Deployed ${GITHUB_REF_NAME} → ${url}"
+          echo "### Oxygen · \`${GITHUB_REF_NAME}\` → ${url}" >> "$GITHUB_STEP_SUMMARY"
