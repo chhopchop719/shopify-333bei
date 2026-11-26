@@ -23,23 +23,13 @@ export async function loader(args: Route.LoaderArgs) {
 }
 
 /**
- * Above the fold: the hero, as the client set it in Shopify (metaobject
- * `home_hero`, entry "accueil": photo, portrait photo, featured collection or
- * product, label). Each empty field falls back: bundled photo, latest product
- * created (not the latest edited: editing an old product mustn't make it new),
- * "Nouveau".
+ * Above the fold: the hero's background, as the client set it in Shopify
+ * (metaobject `home_hero`, entry "accueil": photo, portrait photo for
+ * phones). No photo: the bundled one.
  */
 async function loadCriticalData({context}: Route.LoaderArgs) {
-  const {entry, latest} = await context.storefront.query(HERO_QUERY);
+  const {entry} = await context.storefront.query(HERO_QUERY);
 
-  const collection =
-    entry?.collection?.reference?.__typename === 'Collection'
-      ? entry.collection.reference
-      : null;
-  const product =
-    entry?.product?.reference?.__typename === 'Product'
-      ? entry.product.reference
-      : latest.nodes[0];
   const image =
     entry?.image?.reference?.__typename === 'MediaImage'
       ? entry.image.reference.image
@@ -49,19 +39,7 @@ async function loadCriticalData({context}: Route.LoaderArgs) {
       ? entry.imageMobile.reference.image
       : null;
 
-  let feature: HeroContent['feature'] = null;
-  if (collection) {
-    feature = {
-      title: collection.title,
-      href: `/collections/${collection.handle}`,
-    };
-  } else if (product) {
-    feature = {title: product.title, href: `/products/${product.handle}`};
-  }
-
   const hero: HeroContent = {
-    label: entry?.label?.value?.trim() || 'Nouveau',
-    feature,
     image: image ?? imageMobile ?? null,
     imageMobile: image ? (imageMobile ?? null) : null,
   };
@@ -203,9 +181,6 @@ const HERO_QUERY = `#graphql
   query HomeHero($country: CountryCode, $language: LanguageCode)
     @inContext(country: $country, language: $language) {
     entry: metaobject(handle: {type: "home_hero", handle: "accueil"}) {
-      label: field(key: "label") {
-        value
-      }
       image: field(key: "image") {
         reference {
           __typename
@@ -217,30 +192,6 @@ const HERO_QUERY = `#graphql
           __typename
           ...HomeHeroImage
         }
-      }
-      product: field(key: "product") {
-        reference {
-          __typename
-          ... on Product {
-            title
-            handle
-          }
-        }
-      }
-      collection: field(key: "collection") {
-        reference {
-          __typename
-          ... on Collection {
-            title
-            handle
-          }
-        }
-      }
-    }
-    latest: products(first: 1, sortKey: CREATED_AT, reverse: true) {
-      nodes {
-        title
-        handle
       }
     }
   }

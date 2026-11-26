@@ -443,7 +443,6 @@ export type HomeHeroQueryVariables = StorefrontAPI.Exact<{
 
 export type HomeHeroQuery = {
   entry?: StorefrontAPI.Maybe<{
-    label?: StorefrontAPI.Maybe<Pick<StorefrontAPI.MetaobjectField, 'value'>>;
     image?: StorefrontAPI.Maybe<{
       reference?: StorefrontAPI.Maybe<
         | {
@@ -486,48 +485,7 @@ export type HomeHeroQuery = {
           })
       >;
     }>;
-    product?: StorefrontAPI.Maybe<{
-      reference?: StorefrontAPI.Maybe<
-        | {
-            __typename:
-              | 'Article'
-              | 'Collection'
-              | 'GenericFile'
-              | 'MediaImage'
-              | 'Metaobject'
-              | 'Model3d'
-              | 'Page'
-              | 'ProductVariant'
-              | 'Video';
-          }
-        | ({__typename: 'Product'} & Pick<
-            StorefrontAPI.Product,
-            'title' | 'handle'
-          >)
-      >;
-    }>;
-    collection?: StorefrontAPI.Maybe<{
-      reference?: StorefrontAPI.Maybe<
-        | {
-            __typename:
-              | 'Article'
-              | 'GenericFile'
-              | 'MediaImage'
-              | 'Metaobject'
-              | 'Model3d'
-              | 'Page'
-              | 'Product'
-              | 'ProductVariant'
-              | 'Video';
-          }
-        | ({__typename: 'Collection'} & Pick<
-            StorefrontAPI.Collection,
-            'title' | 'handle'
-          >)
-      >;
-    }>;
   }>;
-  latest: {nodes: Array<Pick<StorefrontAPI.Product, 'title' | 'handle'>>};
 };
 
 export type HomeCollectionFragment = Pick<
@@ -1884,7 +1842,7 @@ interface GeneratedQueryTypes {
     return: FooterQuery;
     variables: FooterQueryVariables;
   };
-  '#graphql\n  fragment HomeHeroImage on MediaImage {\n    image {\n      url\n      width\n    }\n  }\n  query HomeHero($country: CountryCode, $language: LanguageCode)\n    @inContext(country: $country, language: $language) {\n    entry: metaobject(handle: {type: "home_hero", handle: "accueil"}) {\n      label: field(key: "label") {\n        value\n      }\n      image: field(key: "image") {\n        reference {\n          __typename\n          ...HomeHeroImage\n        }\n      }\n      imageMobile: field(key: "image_mobile") {\n        reference {\n          __typename\n          ...HomeHeroImage\n        }\n      }\n      product: field(key: "product") {\n        reference {\n          __typename\n          ... on Product {\n            title\n            handle\n          }\n        }\n      }\n      collection: field(key: "collection") {\n        reference {\n          __typename\n          ... on Collection {\n            title\n            handle\n          }\n        }\n      }\n    }\n    latest: products(first: 1, sortKey: CREATED_AT, reverse: true) {\n      nodes {\n        title\n        handle\n      }\n    }\n  }\n': {
+  '#graphql\n  fragment HomeHeroImage on MediaImage {\n    image {\n      url\n      width\n    }\n  }\n  query HomeHero($country: CountryCode, $language: LanguageCode)\n    @inContext(country: $country, language: $language) {\n    entry: metaobject(handle: {type: "home_hero", handle: "accueil"}) {\n      image: field(key: "image") {\n        reference {\n          __typename\n          ...HomeHeroImage\n        }\n      }\n      imageMobile: field(key: "image_mobile") {\n        reference {\n          __typename\n          ...HomeHeroImage\n        }\n      }\n    }\n  }\n': {
     return: HomeHeroQuery;
     variables: HomeHeroQueryVariables;
   };

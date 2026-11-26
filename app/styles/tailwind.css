@@ -314,7 +314,7 @@ html {
 }
 
 /* ---------- Home hero shade (Hero.tsx, and SiteLoader's last frame) ----------
-   Ink rising from the bottom so the caption reads on any photo, eased over
+   Ink rising from the bottom of the photo, eased over
    several stops (no banding) and gone before the logo in the middle; the
    top of the photo stays untouched. */
 .hero-shade {
@@ -560,12 +560,6 @@ html body[data-scroll-locked] {
 .reveal-line-mask {
   padding-block: 0.12em 0.2em;
   margin-block: -0.12em -0.2em;
-}
-/* Hero's featured name (Hero.tsx): one mask per word, same extra room, plus a
-   little on the sides for the letters' tilt as they rise */
-.hero-word-mask {
-  padding: 0.12em 0.08em 0.2em;
-  margin: -0.12em -0.08em -0.2em;
 }
 
 /* ---------- Header navigation ---------- */
