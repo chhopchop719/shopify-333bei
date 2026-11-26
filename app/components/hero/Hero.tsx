@@ -1,5 +1,6 @@
 import {useEffect, useRef} from 'react';
 import {Link} from 'react-router';
+import {ArrowRight} from 'lucide-react';
 import {StickerLogo} from '~/components/StickerLogo';
 import {
   CURVE_IN_OUT,
@@ -69,6 +70,17 @@ export function Hero({hero}: {hero: HeroContent}) {
           0,
         );
 
+      // Shop now: rises under the logo as it comes into focus
+      const cta = sticker.querySelector<HTMLElement>('[data-hero-cta]');
+      if (cta) {
+        intro.fromTo(
+          cta,
+          {opacity: 0, y: 14},
+          {opacity: 1, y: 0, duration: 0.9, ease: CURVE_OUT},
+          0.45,
+        );
+      }
+
       // No featured drop: the hero is just the photo and the logo
       if (tag && title) {
         // The butter label is wiped in from the left
@@ -129,9 +141,23 @@ export function Hero({hero}: {hero: HeroContent}) {
       <div className="pointer-events-none absolute inset-0 grid place-items-center">
         <div
           ref={stickerRef}
-          className="hero-sticker -translate-y-[3%] w-[46vw] md:w-[min(30vw,calc(27svh*1.6))]"
+          className="hero-sticker relative -translate-y-[3%] w-[46vw] md:w-[min(30vw,calc(27svh*1.6))]"
         >
           <StickerLogo />
+          {/* Hung under the logo (out of the flow: the logo stays centred) */}
+          <div
+            data-hero-cta
+            className="absolute inset-x-0 top-full mt-6 flex justify-center md:mt-8"
+          >
+            <Link
+              to="/collections/all"
+              prefetch="intent"
+              className="bar-cell pointer-events-auto flex h-(--bar-block) items-center gap-2 bg-ink px-5 text-xs font-bold tracking-wide whitespace-nowrap text-paper uppercase md:text-[0.8125rem]"
+            >
+              Shop now
+              <ArrowRight aria-hidden className="size-4" strokeWidth={2} />
+            </Link>
+          </div>
         </div>
       </div>
 
